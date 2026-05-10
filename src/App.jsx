@@ -4,6 +4,7 @@ import "./App.css";
 const EDITH_FINCH_KEY = "gamelingo:v1:edithFinch";
 const EDITH_FINCH_ID = "edith-finch";
 const HOME_PATH = "/";
+const EDITH_FINCH_COVER = "/edith-finch-cover.png";
 
 const games = [
   {
@@ -11,7 +12,7 @@ const games = [
     path: "/games/edith-finch",
     title: "What Remains of Edith Finch",
     description: "대사를 내 문장으로 바꾸기",
-    artwork: "/edith-finch-cover.svg",
+    artwork: EDITH_FINCH_COVER,
   },
 ];
 
@@ -444,7 +445,7 @@ function EdithFinchPage({ data, setData, onGoHome }) {
     <div className="page-stack">
       <header className="page-header">
         <div className="study-title">
-          <img className="study-game-art" src="/edith-finch-cover.svg" alt="" />
+          <img className="study-game-art" src={EDITH_FINCH_COVER} alt="" />
           <div>
             <p className="eyebrow">공부 중</p>
             <h1>What Remains of Edith Finch</h1>
