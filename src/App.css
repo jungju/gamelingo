@@ -692,6 +692,21 @@ button:disabled {
   object-fit: contain;
 }
 
+.family-tree-missing {
+  display: grid;
+  place-items: center;
+  border: 1px dashed #57534e;
+  color: #a8a29e;
+  text-align: center;
+}
+
+.family-tree-missing span {
+  max-width: 16rem;
+  padding: 12px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
