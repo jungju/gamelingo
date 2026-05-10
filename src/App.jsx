@@ -29,7 +29,6 @@ const sampleSentences = [
     original: "I remember.",
     meaning: "나는 기억한다.",
     mySentence: "I remember my first day at work.",
-    memo: "remember 뒤에 기억나는 대상을 붙여서 연습",
     practiced: false,
   },
   {
@@ -37,7 +36,6 @@ const sampleSentences = [
     original: "I was afraid.",
     meaning: "나는 두려웠다.",
     mySentence: "I was nervous before the meeting.",
-    memo: "감정 표현을 바꿔서 연습",
     practiced: false,
   },
   {
@@ -45,7 +43,6 @@ const sampleSentences = [
     original: "I couldn't explain it.",
     meaning: "나는 그것을 설명할 수 없었다.",
     mySentence: "I couldn't explain my idea clearly.",
-    memo: "couldn't + 동사원형 구조 연습",
     practiced: false,
   },
 ];
@@ -130,7 +127,6 @@ function createEmptySentenceForm() {
     original: "",
     meaning: "",
     mySentence: "",
-    memo: "",
   };
 }
 
@@ -196,7 +192,6 @@ function normalizeSentence(sentence) {
     original: sentence.original,
     meaning: typeof sentence.meaning === "string" ? sentence.meaning : "",
     mySentence: typeof sentence.mySentence === "string" ? sentence.mySentence : "",
-    memo: typeof sentence.memo === "string" ? sentence.memo : "",
     practiced: Boolean(sentence.practiced),
   };
 }
@@ -323,8 +318,7 @@ function EdithFinchPage({ data, setData, onGoHome }) {
         !keyword ||
         sentence.original.toLowerCase().includes(keyword) ||
         sentence.meaning.toLowerCase().includes(keyword) ||
-        sentence.mySentence.toLowerCase().includes(keyword) ||
-        sentence.memo.toLowerCase().includes(keyword)
+        sentence.mySentence.toLowerCase().includes(keyword)
       );
     });
   }, [data.sentences, searchText]);
@@ -375,7 +369,6 @@ function EdithFinchPage({ data, setData, onGoHome }) {
                 original,
                 meaning: sentenceForm.meaning.trim(),
                 mySentence: sentenceForm.mySentence.trim(),
-                memo: sentenceForm.memo.trim(),
               }
             : sentence
         ),
@@ -386,7 +379,6 @@ function EdithFinchPage({ data, setData, onGoHome }) {
         original,
         meaning: sentenceForm.meaning.trim(),
         mySentence: sentenceForm.mySentence.trim(),
-        memo: sentenceForm.memo.trim(),
         practiced: false,
       };
 
@@ -405,7 +397,6 @@ function EdithFinchPage({ data, setData, onGoHome }) {
       original: sentence.original,
       meaning: sentence.meaning,
       mySentence: sentence.mySentence,
-      memo: sentence.memo,
     });
   }
 
@@ -604,30 +595,22 @@ function SentenceForm({ form, editingSentenceId, onCancelEdit, onSaveSentence, o
           />
         </label>
 
-        <label className="field">
+        <label className="field full-width">
           <span>한국어 뜻</span>
-          <input
+          <textarea
             value={form.meaning}
             onChange={(event) => onUpdateForm("meaning", event.target.value)}
             placeholder="나는 기억한다."
-          />
-        </label>
-
-        <label className="field">
-          <span>내 문장</span>
-          <input
-            value={form.mySentence}
-            onChange={(event) => onUpdateForm("mySentence", event.target.value)}
-            placeholder="나중에 내 상황에 맞게 바꿔 적기"
+            rows="3"
           />
         </label>
 
         <label className="field full-width">
-          <span>메모</span>
+          <span>내 문장</span>
           <textarea
-            value={form.memo}
-            onChange={(event) => onUpdateForm("memo", event.target.value)}
-            placeholder="떠오르는 게 있을 때만 짧게 적기"
+            value={form.mySentence}
+            onChange={(event) => onUpdateForm("mySentence", event.target.value)}
+            placeholder="나중에 내 상황에 맞게 바꿔 적기"
             rows="3"
           />
         </label>
@@ -669,7 +652,7 @@ function SentenceList({
             value={searchText}
             onChange={(event) => onSearchTextChange(event.target.value)}
             aria-label="문장 검색"
-            placeholder="원문, 뜻, 내 문장, 메모"
+            placeholder="원문, 뜻, 내 문장"
           />
           <button className="button small danger" type="button" onClick={onResetData}>
             초기화
@@ -726,10 +709,6 @@ function SentenceCard({
         <div>
           <p className="card-label">내 문장</p>
           <p>{sentence.mySentence || "나중에 만들어도 괜찮음"}</p>
-        </div>
-        <div>
-          <p className="card-label">메모</p>
-          <p>{sentence.memo || "메모 없음"}</p>
         </div>
       </div>
 
