@@ -1,75 +1,51 @@
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 
-const SELECTED_GAME_KEY = "gamelingo:v1:selectedGame";
 const EDITH_FINCH_KEY = "gamelingo:v1:edithFinch";
 const EDITH_FINCH_ID = "edith-finch";
+const HOME_PATH = "/";
 
 const games = [
   {
     id: EDITH_FINCH_ID,
+    path: "/games/edith-finch",
     title: "What Remains of Edith Finch",
     description: "대사를 내 문장으로 바꾸기",
   },
 ];
 
-const chapters = [
-  "Prologue",
-  "Molly",
-  "Odin",
-  "Calvin",
-  "Barbara",
-  "Walter",
-  "Sam",
-  "Gregory",
-  "Gus",
-  "Milton",
-  "Lewis",
-  "Edith",
-];
-
-const difficultyOptions = ["Easy", "Normal", "Hard"];
-const emotionTagOptions = ["기억", "두려움", "가족", "슬픔", "호기심", "이상함"];
-
 const missionItems = [
   { id: "save-3-sentences", label: "문장 3개 저장하기" },
-  { id: "make-2-my-sentences", label: "내 문장 2개 만들기" },
+  { id: "save-5-words", label: "단어 5개 적기" },
+  { id: "leave-story-note", label: "스토리 메모 한 줄 남기기" },
+  { id: "make-2-my-sentences", label: "내 문장 1개만 만들어보기" },
   { id: "speak-1-original", label: "원문 1개 소리 내서 따라 말하기" },
-  { id: "leave-next-note", label: "이어할 위치 메모하기" },
+  { id: "practice-1-sentence", label: "연습 완료 1개 체크하기" },
 ];
 
 const sampleSentences = [
   {
     id: "sample-1",
-    chapter: "Prologue",
     original: "I remember.",
     meaning: "나는 기억한다.",
     mySentence: "I remember my first day at work.",
     memo: "remember 뒤에 기억나는 대상을 붙여서 연습",
-    difficulty: "Easy",
-    emotionTag: "기억",
     practiced: false,
   },
   {
     id: "sample-2",
-    chapter: "Prologue",
     original: "I was afraid.",
     meaning: "나는 두려웠다.",
     mySentence: "I was nervous before the meeting.",
     memo: "감정 표현을 바꿔서 연습",
-    difficulty: "Easy",
-    emotionTag: "두려움",
     practiced: false,
   },
   {
     id: "sample-3",
-    chapter: "Molly",
     original: "I couldn't explain it.",
     meaning: "나는 그것을 설명할 수 없었다.",
     mySentence: "I couldn't explain my idea clearly.",
     memo: "couldn't + 동사원형 구조 연습",
-    difficulty: "Normal",
-    emotionTag: "이상함",
     practiced: false,
   },
 ];
@@ -95,6 +71,13 @@ const edithFinchGuide = {
       ],
     },
     {
+      title: "단어와 장면 메모하기",
+      bullets: [
+        "자주 들리는 단어는 뜻과 함께 짧게 적습니다.",
+        "스토리 메모에는 오늘 본 장면이나 인물 관계만 한두 줄 남깁니다.",
+      ],
+    },
+    {
       title: "내 문장으로 바꾸기",
       bullets: ["게임 문장을 그대로 외우지 말고 내 상황에 맞게 바꿉니다."],
       example: {
@@ -115,8 +98,8 @@ const edithFinchGuide = {
       bullets: ["문장을 보고 뜻을 알고, 내 문장으로 한 번 말할 수 있으면 연습 완료로 체크합니다."],
     },
     {
-      title: "이어할 위치 남기기",
-      bullets: ["게임을 끄기 전에 현재 위치와 다음에 할 일을 짧게 적습니다."],
+      title: "가볍게 반복하기",
+      bullets: ["다음 플레이 전에 저장한 문장을 한두 개만 다시 듣고 말합니다."],
     },
   ],
   tips: [
@@ -124,6 +107,7 @@ const edithFinchGuide = {
     "한 번 플레이할 때 문장 3개면 충분합니다.",
     "많이 저장하는 것보다 저장한 문장을 내 말로 바꾸는 것이 더 중요합니다.",
     "긴 문장보다 내가 실제로 쓸 수 있는 짧은 문장이 좋습니다.",
+    "단어와 스토리 메모는 완벽하게 정리하지 말고 다음에 기억날 만큼만 적습니다.",
     "목표는 모든 대사를 해석하는 것이 아니라 게임 속 문장을 내 영어로 바꾸는 것입니다.",
   ],
 };
@@ -134,24 +118,19 @@ function createDefaultMissionChecks() {
 
 function createDefaultEdithFinchData() {
   return {
-    currentChapter: "Prologue",
-    currentLocation: "",
-    nextPlayNote: "",
-    completedChapters: [],
+    wordMemo: "",
+    storyMemo: "",
     missionChecks: createDefaultMissionChecks(),
     sentences: sampleSentences,
   };
 }
 
-function createEmptySentenceForm(chapter) {
+function createEmptySentenceForm() {
   return {
-    chapter,
     original: "",
     meaning: "",
     mySentence: "",
     memo: "",
-    difficulty: "Normal",
-    emotionTag: "",
   };
 }
 
@@ -160,14 +139,6 @@ function createId() {
     return crypto.randomUUID();
   }
   return `sentence-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
-function loadSelectedGame() {
-  try {
-    return localStorage.getItem(SELECTED_GAME_KEY) || EDITH_FINCH_ID;
-  } catch {
-    return EDITH_FINCH_ID;
-  }
 }
 
 function loadEdithFinchData() {
@@ -190,12 +161,8 @@ function normalizeEdithFinchData(data) {
   }
 
   return {
-    currentChapter: chapters.includes(data.currentChapter) ? data.currentChapter : defaultData.currentChapter,
-    currentLocation: typeof data.currentLocation === "string" ? data.currentLocation : "",
-    nextPlayNote: typeof data.nextPlayNote === "string" ? data.nextPlayNote : "",
-    completedChapters: Array.isArray(data.completedChapters)
-      ? data.completedChapters.filter((chapter) => chapters.includes(chapter))
-      : [],
+    wordMemo: typeof data.wordMemo === "string" ? data.wordMemo : defaultData.wordMemo,
+    storyMemo: typeof data.storyMemo === "string" ? data.storyMemo : defaultData.storyMemo,
     missionChecks: normalizeMissionChecks(data.missionChecks),
     sentences: Array.isArray(data.sentences)
       ? data.sentences.map(normalizeSentence).filter(Boolean)
@@ -226,28 +193,46 @@ function normalizeSentence(sentence) {
 
   return {
     id: sentence.id || createId(),
-    chapter: chapters.includes(sentence.chapter) ? sentence.chapter : "Prologue",
     original: sentence.original,
     meaning: typeof sentence.meaning === "string" ? sentence.meaning : "",
     mySentence: typeof sentence.mySentence === "string" ? sentence.mySentence : "",
     memo: typeof sentence.memo === "string" ? sentence.memo : "",
-    difficulty: difficultyOptions.includes(sentence.difficulty) ? sentence.difficulty : "Normal",
-    emotionTag: emotionTagOptions.includes(sentence.emotionTag) ? sentence.emotionTag : "",
     practiced: Boolean(sentence.practiced),
   };
 }
 
+function normalizeRoutePath(path) {
+  const pathname = path.split("?")[0].replace(/\/+$/, "");
+  return pathname || HOME_PATH;
+}
+
+function readRoutePath() {
+  if (typeof window === "undefined") return HOME_PATH;
+
+  const searchParams = new URLSearchParams(window.location.search);
+  const redirectedPath = searchParams.get("path");
+
+  if (redirectedPath) {
+    const routePath = normalizeRoutePath(redirectedPath);
+    window.history.replaceState({}, "", routePath);
+    return routePath;
+  }
+
+  return normalizeRoutePath(window.location.pathname);
+}
+
 export default function App() {
-  const [selectedGame, setSelectedGame] = useState(loadSelectedGame);
+  const [routePath, setRoutePath] = useState(readRoutePath);
   const [edithFinchData, setEdithFinchData] = useState(loadEdithFinchData);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(SELECTED_GAME_KEY, selectedGame);
-    } catch {
-      // localStorage를 사용할 수 없는 환경에서도 화면은 계속 보여준다.
+    function syncRoutePath() {
+      setRoutePath(readRoutePath());
     }
-  }, [selectedGame]);
+
+    window.addEventListener("popstate", syncRoutePath);
+    return () => window.removeEventListener("popstate", syncRoutePath);
+  }, []);
 
   useEffect(() => {
     try {
@@ -257,113 +242,92 @@ export default function App() {
     }
   }, [edithFinchData]);
 
-  const selectedGameInfo = games.find((game) => game.id === selectedGame);
+  const selectedGameInfo = games.find((game) => game.path === routePath);
+
+  function navigateTo(path) {
+    const routePath = normalizeRoutePath(path);
+    window.history.pushState({}, "", routePath);
+    setRoutePath(routePath);
+  }
 
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <div className="brand">
-          <p className="brand-label">Gamelingo</p>
-          <p className="brand-text">게임별 영어 문장 노트</p>
-        </div>
-
-        <GameMenu games={games} selectedGame={selectedGame} onSelectGame={setSelectedGame} />
-      </aside>
-
-      <main className="main-content">
-        {selectedGame === EDITH_FINCH_ID ? (
-          <EdithFinchPage data={edithFinchData} setData={setEdithFinchData} />
-        ) : (
-          <ComingSoonPage game={selectedGameInfo} />
-        )}
-      </main>
+    <div className={`app-shell ${selectedGameInfo ? "study-shell" : "home-shell"}`}>
+      {selectedGameInfo ? (
+        <main className="main-content">
+          {selectedGameInfo.id === EDITH_FINCH_ID ? (
+            <EdithFinchPage data={edithFinchData} setData={setEdithFinchData} onGoHome={() => navigateTo(HOME_PATH)} />
+          ) : (
+            <ComingSoonPage game={selectedGameInfo} onGoHome={() => navigateTo(HOME_PATH)} />
+          )}
+        </main>
+      ) : (
+        <HomePage games={games} onSelectGame={(game) => navigateTo(game.path)} />
+      )}
     </div>
   );
 }
 
-function GameMenu({ games, selectedGame, onSelectGame }) {
+function HomePage({ games, onSelectGame }) {
   return (
-    <section className="panel menu-panel">
-      <h2>게임 선택</h2>
-      <div className="game-list">
+    <main className="home-page">
+      <header className="home-header">
+        <div className="brand home-brand">
+          <p className="brand-label">Gamelingo</p>
+          <p className="brand-text">게임별 영어 문장 노트</p>
+        </div>
+        <div>
+          <p className="eyebrow">게임 선택</p>
+          <h1>오늘 공부할 게임을 고르세요</h1>
+          <p className="page-description">공부 화면에서는 선택한 게임의 문장 노트에만 집중합니다.</p>
+        </div>
+      </header>
+
+      <section className="home-game-grid" aria-label="게임 선택">
         {games.map((game) => (
-          <button
+          <a
             key={game.id}
-            className={`game-button ${selectedGame === game.id ? "selected" : ""}`}
-            type="button"
-            onClick={() => onSelectGame(game.id)}
+            href={game.path}
+            className="home-game-button"
+            onClick={(event) => {
+              if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+              event.preventDefault();
+              onSelectGame(game);
+            }}
           >
             <span className="game-title">{game.title}</span>
             <span className="game-description">{game.description}</span>
-          </button>
+            <span className="game-action">공부 시작</span>
+          </a>
         ))}
-      </div>
-    </section>
+      </section>
+    </main>
   );
 }
 
-function EdithFinchPage({ data, setData }) {
-  const [chapterFilter, setChapterFilter] = useState("all");
+function EdithFinchPage({ data, setData, onGoHome }) {
   const [searchText, setSearchText] = useState("");
   const [editingSentenceId, setEditingSentenceId] = useState(null);
-  const [sentenceForm, setSentenceForm] = useState(createEmptySentenceForm(data.currentChapter));
+  const [sentenceForm, setSentenceForm] = useState(createEmptySentenceForm());
   const [isGuideOpen, setIsGuideOpen] = useState(false);
 
-  const completedChapterCount = data.completedChapters.length;
   const sentenceCount = data.sentences.length;
   const mySentenceCount = data.sentences.filter((sentence) => sentence.mySentence.trim()).length;
   const practicedSentenceCount = data.sentences.filter((sentence) => sentence.practiced).length;
-  const progressScore = sentenceCount + mySentenceCount + practicedSentenceCount + completedChapterCount * 5;
+  const progressScore = sentenceCount + mySentenceCount + practicedSentenceCount;
 
   const filteredSentences = useMemo(() => {
     const keyword = searchText.trim().toLowerCase();
 
     return data.sentences.filter((sentence) => {
-      const chapterMatches = chapterFilter === "all" || sentence.chapter === chapterFilter;
-      const textMatches =
+      return (
         !keyword ||
         sentence.original.toLowerCase().includes(keyword) ||
         sentence.meaning.toLowerCase().includes(keyword) ||
         sentence.mySentence.toLowerCase().includes(keyword) ||
-        sentence.memo.toLowerCase().includes(keyword) ||
-        sentence.difficulty.toLowerCase().includes(keyword) ||
-        sentence.emotionTag.toLowerCase().includes(keyword);
-
-      return chapterMatches && textMatches;
+        sentence.memo.toLowerCase().includes(keyword)
+      );
     });
-  }, [chapterFilter, data.sentences, searchText]);
-
-  function updateProgress(field, value) {
-    setData((previousData) => ({
-      ...previousData,
-      [field]: value,
-    }));
-  }
-
-  function changeCurrentChapter(chapter) {
-    setData((previousData) => ({
-      ...previousData,
-      currentChapter: chapter,
-    }));
-
-    if (!editingSentenceId) {
-      setSentenceForm(createEmptySentenceForm(chapter));
-    }
-  }
-
-  function toggleChapterComplete(chapter) {
-    setData((previousData) => {
-      const isCompleted = previousData.completedChapters.includes(chapter);
-      const completedChapters = isCompleted
-        ? previousData.completedChapters.filter((item) => item !== chapter)
-        : [...previousData.completedChapters, chapter];
-
-      return {
-        ...previousData,
-        completedChapters,
-      };
-    });
-  }
+  }, [data.sentences, searchText]);
 
   function toggleMissionCheck(missionId) {
     setData((previousData) => ({
@@ -376,6 +340,13 @@ function EdithFinchPage({ data, setData }) {
     }));
   }
 
+  function updateStudyMemo(field, value) {
+    setData((previousData) => ({
+      ...previousData,
+      [field]: value,
+    }));
+  }
+
   function updateSentenceForm(field, value) {
     setSentenceForm((previousForm) => ({
       ...previousForm,
@@ -383,8 +354,8 @@ function EdithFinchPage({ data, setData }) {
     }));
   }
 
-  function resetSentenceForm(chapter = data.currentChapter) {
-    setSentenceForm(createEmptySentenceForm(chapter));
+  function resetSentenceForm() {
+    setSentenceForm(createEmptySentenceForm());
     setEditingSentenceId(null);
   }
 
@@ -401,13 +372,10 @@ function EdithFinchPage({ data, setData }) {
           sentence.id === editingSentenceId
             ? {
                 ...sentence,
-                chapter: sentenceForm.chapter,
                 original,
                 meaning: sentenceForm.meaning.trim(),
                 mySentence: sentenceForm.mySentence.trim(),
                 memo: sentenceForm.memo.trim(),
-                difficulty: sentenceForm.difficulty,
-                emotionTag: sentenceForm.emotionTag,
               }
             : sentence
         ),
@@ -415,13 +383,10 @@ function EdithFinchPage({ data, setData }) {
     } else {
       const newSentence = {
         id: createId(),
-        chapter: sentenceForm.chapter,
         original,
         meaning: sentenceForm.meaning.trim(),
         mySentence: sentenceForm.mySentence.trim(),
         memo: sentenceForm.memo.trim(),
-        difficulty: sentenceForm.difficulty,
-        emotionTag: sentenceForm.emotionTag,
         practiced: false,
       };
 
@@ -431,19 +396,16 @@ function EdithFinchPage({ data, setData }) {
       }));
     }
 
-    resetSentenceForm(sentenceForm.chapter);
+    resetSentenceForm();
   }
 
   function editSentence(sentence) {
     setEditingSentenceId(sentence.id);
     setSentenceForm({
-      chapter: sentence.chapter,
       original: sentence.original,
       meaning: sentence.meaning,
       mySentence: sentence.mySentence,
       memo: sentence.memo,
-      difficulty: sentence.difficulty,
-      emotionTag: sentence.emotionTag,
     });
   }
 
@@ -463,22 +425,6 @@ function EdithFinchPage({ data, setData }) {
     }));
   }
 
-  function updateSentenceMeta(sentenceId, field, value) {
-    setData((previousData) => ({
-      ...previousData,
-      sentences: previousData.sentences.map((sentence) =>
-        sentence.id === sentenceId ? { ...sentence, [field]: value } : sentence
-      ),
-    }));
-  }
-
-  function changeChapterFilter(chapter) {
-    setChapterFilter(chapter);
-    if (!editingSentenceId && chapter !== "all") {
-      setSentenceForm(createEmptySentenceForm(chapter));
-    }
-  }
-
   function speakEnglish(text) {
     if (!text || typeof window === "undefined" || !window.speechSynthesis) return;
 
@@ -495,29 +441,28 @@ function EdithFinchPage({ data, setData }) {
 
     const defaultData = createDefaultEdithFinchData();
     setData(defaultData);
-    setChapterFilter("all");
     setSearchText("");
     setEditingSentenceId(null);
-    setSentenceForm(createEmptySentenceForm(defaultData.currentChapter));
+    setSentenceForm(createEmptySentenceForm());
   }
 
   return (
     <div className="page-stack">
       <header className="page-header">
         <div>
-          <p className="eyebrow">선택한 게임</p>
+          <p className="eyebrow">공부 중</p>
           <h1>What Remains of Edith Finch</h1>
-          <p className="page-description">
-            스토리를 먼저 즐기고, 마음에 남는 짧은 영어 문장을 내 말로 바꿔 모으는 플레이 노트입니다.
-          </p>
         </div>
         <div className="page-header-side">
+          <button className="button small secondary" type="button" onClick={onGoHome}>
+            홈
+          </button>
           <button className="button secondary guide-button" type="button" onClick={() => setIsGuideOpen(true)}>
             플레이 미션 보기
           </button>
           <div className="summary-grid">
-            <SummaryCard label="챕터 완료" value={`${completedChapterCount}/${chapters.length}`} />
             <SummaryCard label="저장 문장" value={sentenceCount} />
+            <SummaryCard label="내 문장" value={mySentenceCount} />
             <SummaryCard label="연습 완료" value={practicedSentenceCount} />
           </div>
           <div className="score-pill">
@@ -526,46 +471,84 @@ function EdithFinchPage({ data, setData }) {
         </div>
       </header>
 
-      <section className="content-grid">
-        <div className="left-column">
-          <MissionPanel missionChecks={data.missionChecks} onToggleMission={toggleMissionCheck} />
+      <WordMemoBar wordMemo={data.wordMemo} onUpdateMemo={updateStudyMemo} />
 
-          <ProgressPanel
-            data={data}
-            completedChapterCount={completedChapterCount}
-            onChangeCurrentChapter={changeCurrentChapter}
-            onToggleChapterComplete={toggleChapterComplete}
-            onUpdateProgress={updateProgress}
-          />
-        </div>
-
-        <div className="right-column">
+      <section className="study-layout">
+        <div className="study-main">
           <SentenceForm
             form={sentenceForm}
             editingSentenceId={editingSentenceId}
-            onCancelEdit={() => resetSentenceForm(data.currentChapter)}
+            onCancelEdit={resetSentenceForm}
             onSaveSentence={saveSentence}
             onUpdateForm={updateSentenceForm}
           />
 
-          <SentenceList
-            chapterFilter={chapterFilter}
-            filteredSentences={filteredSentences}
-            searchText={searchText}
-            onChangeChapterFilter={changeChapterFilter}
-            onDeleteSentence={deleteSentence}
-            onEditSentence={editSentence}
-            onSearchTextChange={setSearchText}
-            onSpeakEnglish={speakEnglish}
-            onTogglePracticed={toggleSentencePracticed}
-            onUpdateSentenceMeta={updateSentenceMeta}
-            onResetData={resetEdithFinchData}
-          />
+          <div className="study-main-grid">
+            <div className="left-column">
+              <MissionPanel missionChecks={data.missionChecks} onToggleMission={toggleMissionCheck} />
+            </div>
+
+            <div className="right-column">
+              <SentenceList
+                filteredSentences={filteredSentences}
+                searchText={searchText}
+                onDeleteSentence={deleteSentence}
+                onEditSentence={editSentence}
+                onSearchTextChange={setSearchText}
+                onSpeakEnglish={speakEnglish}
+                onTogglePracticed={toggleSentencePracticed}
+                onResetData={resetEdithFinchData}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="memo-column">
+          <StoryMemoPanel storyMemo={data.storyMemo} onUpdateMemo={updateStudyMemo} />
         </div>
       </section>
 
       <GuideModal guide={edithFinchGuide} isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
     </div>
+  );
+}
+
+function WordMemoBar({ wordMemo, onUpdateMemo }) {
+  return (
+    <section className="panel word-panel">
+      <div className="word-panel-heading">
+        <h2>알아두어야 할 단어</h2>
+        <p>플레이 중 자주 들리는 단어를 위에 고정해둡니다.</p>
+      </div>
+
+      <textarea
+        value={wordMemo}
+        onChange={(event) => onUpdateMemo("wordMemo", event.target.value)}
+        aria-label="알아두어야 할 단어"
+        placeholder={"remember 기억하다 / afraid 두려운 / explain 설명하다"}
+        rows="2"
+      />
+    </section>
+  );
+}
+
+function StoryMemoPanel({ storyMemo, onUpdateMemo }) {
+  return (
+    <section className="panel story-panel">
+      <div className="panel-heading">
+        <div>
+          <h2>스토리 메모</h2>
+          <p>장면, 인물 관계, 다음에 기억할 내용을 넓게 적습니다.</p>
+        </div>
+      </div>
+
+      <textarea
+        value={storyMemo}
+        onChange={(event) => onUpdateMemo("storyMemo", event.target.value)}
+        aria-label="스토리 메모"
+        placeholder="오늘 본 장면, 인물 관계, 다음에 기억할 내용"
+      />
+    </section>
   );
 }
 
@@ -600,95 +583,18 @@ function MissionPanel({ missionChecks, onToggleMission }) {
   );
 }
 
-function ProgressPanel({
-  data,
-  completedChapterCount,
-  onChangeCurrentChapter,
-  onToggleChapterComplete,
-  onUpdateProgress,
-}) {
-  return (
-    <section className="panel">
-      <div className="panel-heading">
-        <div>
-          <h2>플레이 진행</h2>
-          <p>이어하기에 필요한 위치를 저장합니다.</p>
-        </div>
-        <span className="small-badge">
-          {completedChapterCount}/{chapters.length}
-        </span>
-      </div>
-
-      <label className="field">
-        <span>현재 챕터</span>
-        <select value={data.currentChapter} onChange={(event) => onChangeCurrentChapter(event.target.value)}>
-          {chapters.map((chapter) => (
-            <option key={chapter} value={chapter}>
-              {chapter}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label className="field">
-        <span>현재 위치 메모</span>
-        <input
-          value={data.currentLocation}
-          onChange={(event) => onUpdateProgress("currentLocation", event.target.value)}
-          placeholder="예: Molly 방 앞"
-        />
-      </label>
-
-      <label className="field">
-        <span>다음에 이어할 내용</span>
-        <textarea
-          value={data.nextPlayNote}
-          onChange={(event) => onUpdateProgress("nextPlayNote", event.target.value)}
-          placeholder="다음에 다시 볼 장면이나 이동할 곳"
-          rows="4"
-        />
-      </label>
-
-      <div className="chapter-list">
-        <p className="list-title">챕터 완료 체크</p>
-        {chapters.map((chapter) => (
-          <label key={chapter} className="chapter-check">
-            <input
-              type="checkbox"
-              checked={data.completedChapters.includes(chapter)}
-              onChange={() => onToggleChapterComplete(chapter)}
-            />
-            <span>{chapter}</span>
-          </label>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function SentenceForm({ form, editingSentenceId, onCancelEdit, onSaveSentence, onUpdateForm }) {
   return (
     <section className="panel">
       <div className="panel-heading">
         <div>
           <h2>{editingSentenceId ? "문장 수정" : "문장 추가"}</h2>
-          <p>게임 원문 영어 문장은 필수입니다.</p>
+          <p>원문만 저장해도 충분합니다. 나머지는 나중에 채워도 됩니다.</p>
         </div>
       </div>
 
       <form className="sentence-form" onSubmit={onSaveSentence}>
-        <label className="field">
-          <span>챕터</span>
-          <select value={form.chapter} onChange={(event) => onUpdateForm("chapter", event.target.value)}>
-            {chapters.map((chapter) => (
-              <option key={chapter} value={chapter}>
-                {chapter}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="field">
+        <label className="field full-width">
           <span>게임 원문 영어 문장</span>
           <input
             value={form.original}
@@ -708,35 +614,12 @@ function SentenceForm({ form, editingSentenceId, onCancelEdit, onSaveSentence, o
         </label>
 
         <label className="field">
-          <span>내 문장으로 바꾸기</span>
+          <span>내 문장</span>
           <input
             value={form.mySentence}
             onChange={(event) => onUpdateForm("mySentence", event.target.value)}
-            placeholder="I remember my first day at work."
+            placeholder="나중에 내 상황에 맞게 바꿔 적기"
           />
-        </label>
-
-        <label className="field">
-          <span>난이도</span>
-          <select value={form.difficulty} onChange={(event) => onUpdateForm("difficulty", event.target.value)}>
-            {difficultyOptions.map((difficulty) => (
-              <option key={difficulty} value={difficulty}>
-                {difficulty}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="field">
-          <span>감정 태그</span>
-          <select value={form.emotionTag} onChange={(event) => onUpdateForm("emotionTag", event.target.value)}>
-            <option value="">선택 안 함</option>
-            {emotionTagOptions.map((emotionTag) => (
-              <option key={emotionTag} value={emotionTag}>
-                {emotionTag}
-              </option>
-            ))}
-          </select>
         </label>
 
         <label className="field full-width">
@@ -744,7 +627,7 @@ function SentenceForm({ form, editingSentenceId, onCancelEdit, onSaveSentence, o
           <textarea
             value={form.memo}
             onChange={(event) => onUpdateForm("memo", event.target.value)}
-            placeholder="문장 구조나 바꿔 말할 포인트"
+            placeholder="떠오르는 게 있을 때만 짧게 적기"
             rows="3"
           />
         </label>
@@ -765,16 +648,13 @@ function SentenceForm({ form, editingSentenceId, onCancelEdit, onSaveSentence, o
 }
 
 function SentenceList({
-  chapterFilter,
   filteredSentences,
   searchText,
-  onChangeChapterFilter,
   onDeleteSentence,
   onEditSentence,
   onSearchTextChange,
   onSpeakEnglish,
   onTogglePracticed,
-  onUpdateSentenceMeta,
   onResetData,
 }) {
   return (
@@ -782,34 +662,19 @@ function SentenceList({
       <div className="panel-heading">
         <div>
           <h2>영어 문장 노트</h2>
-          <p>원문, 뜻, 내 문장, 메모를 검색할 수 있습니다.</p>
         </div>
-        <button className="button danger" type="button" onClick={onResetData}>
-          초기화
-        </button>
-      </div>
-
-      <div className="filter-row">
-        <label className="field">
-          <span>챕터별 필터</span>
-          <select value={chapterFilter} onChange={(event) => onChangeChapterFilter(event.target.value)}>
-            <option value="all">전체</option>
-            {chapters.map((chapter) => (
-              <option key={chapter} value={chapter}>
-                {chapter}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="field">
-          <span>검색</span>
+        <div className="list-tools">
           <input
+            className="search-input"
             value={searchText}
             onChange={(event) => onSearchTextChange(event.target.value)}
+            aria-label="문장 검색"
             placeholder="원문, 뜻, 내 문장, 메모"
           />
-        </label>
+          <button className="button small danger" type="button" onClick={onResetData}>
+            초기화
+          </button>
+        </div>
       </div>
 
       <div className="sentence-list">
@@ -824,7 +689,6 @@ function SentenceList({
               onEditSentence={onEditSentence}
               onSpeakEnglish={onSpeakEnglish}
               onTogglePracticed={onTogglePracticed}
-              onUpdateSentenceMeta={onUpdateSentenceMeta}
             />
           ))
         )}
@@ -839,16 +703,11 @@ function SentenceCard({
   onEditSentence,
   onSpeakEnglish,
   onTogglePracticed,
-  onUpdateSentenceMeta,
 }) {
   return (
     <article className={`sentence-card ${sentence.practiced ? "done" : ""}`}>
       <div className="sentence-top">
         <div>
-          <div className="badge-row">
-            <span className="chapter-badge">{sentence.chapter}</span>
-            {sentence.emotionTag ? <span className="emotion-badge">{sentence.emotionTag}</span> : null}
-          </div>
           <h3>{sentence.original}</h3>
           {sentence.meaning ? <p className="meaning">{sentence.meaning}</p> : null}
         </div>
@@ -863,41 +722,10 @@ function SentenceCard({
         </label>
       </div>
 
-      <div className="sentence-meta-row">
-        <label className="meta-field">
-          <span>난이도</span>
-          <select
-            value={sentence.difficulty}
-            onChange={(event) => onUpdateSentenceMeta(sentence.id, "difficulty", event.target.value)}
-          >
-            {difficultyOptions.map((difficulty) => (
-              <option key={difficulty} value={difficulty}>
-                {difficulty}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="meta-field">
-          <span>감정 태그</span>
-          <select
-            value={sentence.emotionTag}
-            onChange={(event) => onUpdateSentenceMeta(sentence.id, "emotionTag", event.target.value)}
-          >
-            <option value="">선택 안 함</option>
-            {emotionTagOptions.map((emotionTag) => (
-              <option key={emotionTag} value={emotionTag}>
-                {emotionTag}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
       <div className="sentence-body">
         <div>
           <p className="card-label">내 문장</p>
-          <p>{sentence.mySentence || "아직 입력하지 않음"}</p>
+          <p>{sentence.mySentence || "나중에 만들어도 괜찮음"}</p>
         </div>
         <div>
           <p className="card-label">메모</p>
@@ -1013,9 +841,12 @@ function GuideModal({ guide, isOpen, onClose }) {
   );
 }
 
-function ComingSoonPage({ game }) {
+function ComingSoonPage({ game, onGoHome }) {
   return (
     <section className="panel">
+      <button className="button small secondary" type="button" onClick={onGoHome}>
+        홈
+      </button>
       <h1>{game?.title || "선택한 게임"}</h1>
       <p className="page-description">아직 준비 중입니다.</p>
     </section>
