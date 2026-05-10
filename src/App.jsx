@@ -11,6 +11,7 @@ const games = [
     path: "/games/edith-finch",
     title: "What Remains of Edith Finch",
     description: "대사를 내 문장으로 바꾸기",
+    artwork: "/edith-finch-cover.svg",
   },
 ];
 
@@ -289,6 +290,7 @@ function HomePage({ games, onSelectGame }) {
               onSelectGame(game);
             }}
           >
+            <img className="game-card-art" src={game.artwork} alt="" />
             <span className="game-title">{game.title}</span>
             <span className="game-description">{game.description}</span>
             <span className="game-action">공부 시작</span>
@@ -304,6 +306,7 @@ function EdithFinchPage({ data, setData, onGoHome }) {
   const [editingSentenceId, setEditingSentenceId] = useState(null);
   const [sentenceForm, setSentenceForm] = useState(createEmptySentenceForm());
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [isFamilyTreeOpen, setIsFamilyTreeOpen] = useState(false);
 
   const sentenceCount = data.sentences.length;
   const mySentenceCount = data.sentences.filter((sentence) => sentence.mySentence.trim()).length;
@@ -440,9 +443,12 @@ function EdithFinchPage({ data, setData, onGoHome }) {
   return (
     <div className="page-stack">
       <header className="page-header">
-        <div>
-          <p className="eyebrow">공부 중</p>
-          <h1>What Remains of Edith Finch</h1>
+        <div className="study-title">
+          <img className="study-game-art" src="/edith-finch-cover.svg" alt="" />
+          <div>
+            <p className="eyebrow">공부 중</p>
+            <h1>What Remains of Edith Finch</h1>
+          </div>
         </div>
         <div className="page-header-side">
           <button className="button small secondary" type="button" onClick={onGoHome}>
@@ -500,7 +506,144 @@ function EdithFinchPage({ data, setData, onGoHome }) {
       </section>
 
       <GuideModal guide={edithFinchGuide} isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
+      <FamilyTreeReference isOpen={isFamilyTreeOpen} onClose={() => setIsFamilyTreeOpen(false)} onOpen={() => setIsFamilyTreeOpen(true)} />
     </div>
+  );
+}
+
+function FamilyTreeReference({ isOpen, onClose, onOpen }) {
+  const [hasImage, setHasImage] = useState(true);
+  const imageSrc = "/edith-finch-family-tree.png";
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    function closeWithEscape(event) {
+      if (event.key === "Escape") onClose();
+    }
+
+    window.addEventListener("keydown", closeWithEscape);
+    return () => window.removeEventListener("keydown", closeWithEscape);
+  }, [isOpen, onClose]);
+
+  function renderReferenceImage(className) {
+    if (!hasImage) {
+      return <FamilyTreeFallback className={className} />;
+    }
+
+    return (
+      <img
+        className={className}
+        src={imageSrc}
+        alt="The Finches family tree"
+        onError={() => setHasImage(false)}
+      />
+    );
+  }
+
+  return (
+    <>
+      <button className="family-tree-float" type="button" onClick={onOpen} aria-label="Finch 가족 트리 크게 보기">
+        {renderReferenceImage("family-tree-thumb")}
+        <span>The Finches</span>
+      </button>
+
+      {isOpen ? (
+        <div className="reference-backdrop" role="presentation" onClick={onClose}>
+          <section
+            className="reference-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="family-tree-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="reference-header">
+              <div>
+                <p className="eyebrow">참고 이미지</p>
+                <h2 id="family-tree-title">The Finches</h2>
+              </div>
+              <button className="button small secondary" type="button" onClick={onClose}>
+                닫기
+              </button>
+            </div>
+            <div className="reference-image-wrap">{renderReferenceImage("family-tree-large")}</div>
+          </section>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+function FamilyTreeFallback({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 900 620" role="img" aria-label="The Finches family tree fallback">
+      <rect width="900" height="620" fill="#8b7566" />
+      <rect x="18" y="18" width="864" height="584" rx="18" fill="#a98f7e" opacity="0.62" />
+      <path
+        d="M95 450 C185 420 235 455 315 435 C390 415 410 345 500 355 C595 365 575 280 635 250 C700 215 720 185 800 150"
+        fill="none"
+        stroke="#2f241e"
+        strokeWidth="20"
+        strokeLinecap="round"
+      />
+      <path
+        d="M500 355 C520 300 500 255 445 210 C400 170 360 155 300 165"
+        fill="none"
+        stroke="#2f241e"
+        strokeWidth="17"
+        strokeLinecap="round"
+      />
+      <path
+        d="M500 355 C535 410 600 460 720 470"
+        fill="none"
+        stroke="#2f241e"
+        strokeWidth="18"
+        strokeLinecap="round"
+      />
+      <path
+        d="M445 210 C480 155 555 120 640 95"
+        fill="none"
+        stroke="#2f241e"
+        strokeWidth="13"
+        strokeLinecap="round"
+      />
+      <g fill="#2f241e" fontFamily="Georgia, serif">
+        <text x="42" y="62" fontSize="34" fontWeight="700">The Finches</text>
+        <text x="92" y="395" fontSize="22">Molly</text>
+        <text x="92" y="419" fontSize="15">1937-1947</text>
+        <text x="208" y="424" fontSize="22">Barbara</text>
+        <text x="208" y="448" fontSize="15">1944-1960</text>
+        <text x="348" y="384" fontSize="22">Calvin</text>
+        <text x="348" y="408" fontSize="15">1950-1961</text>
+        <text x="506" y="345" fontSize="22">Sam</text>
+        <text x="506" y="369" fontSize="15">1950-1983</text>
+        <text x="673" y="358" fontSize="22">Walter</text>
+        <text x="673" y="382" fontSize="15">1952-2005</text>
+        <text x="700" y="500" fontSize="22">Odin</text>
+        <text x="700" y="524" fontSize="15">1880-1937</text>
+        <text x="430" y="498" fontSize="22">Edie</text>
+        <text x="430" y="522" fontSize="15">1917-2010</text>
+        <text x="330" y="288" fontSize="22">Dawn</text>
+        <text x="330" y="312" fontSize="15">1968-2016</text>
+        <text x="518" y="260" fontSize="22">Gus</text>
+        <text x="518" y="284" fontSize="15">1969-1982</text>
+        <text x="635" y="220" fontSize="22">Gregory</text>
+        <text x="635" y="244" fontSize="15">1976-1977</text>
+        <text x="280" y="170" fontSize="22">Lewis</text>
+        <text x="280" y="194" fontSize="15">1988-2010</text>
+        <text x="410" y="132" fontSize="22">Milton</text>
+        <text x="410" y="156" fontSize="15">1992-2003</text>
+        <text x="610" y="82" fontSize="22">Edith</text>
+        <text x="610" y="106" fontSize="15">1999-</text>
+      </g>
+      <g fill="#2f241e" opacity="0.82">
+        <ellipse cx="118" cy="438" rx="18" ry="7" transform="rotate(-25 118 438)" />
+        <ellipse cx="322" cy="420" rx="18" ry="7" transform="rotate(30 322 420)" />
+        <ellipse cx="500" cy="322" rx="18" ry="7" transform="rotate(-35 500 322)" />
+        <ellipse cx="680" cy="178" rx="18" ry="7" transform="rotate(35 680 178)" />
+        <ellipse cx="710" cy="452" rx="18" ry="7" transform="rotate(-25 710 452)" />
+      </g>
+    </svg>
   );
 }
 
