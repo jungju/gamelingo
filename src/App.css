@@ -321,8 +321,8 @@ button:disabled {
   top: 16px;
   z-index: 10;
   display: grid;
-  grid-template-columns: minmax(170px, 220px) minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: minmax(150px, 190px) minmax(0, 1fr);
+  gap: 10px;
   align-items: start;
 }
 
@@ -336,14 +336,14 @@ button:disabled {
 .word-panel-heading h2 {
   margin: 0;
   color: #fafaf9;
-  font-size: 17px;
+  font-size: 16px;
 }
 
 .word-panel-heading p {
-  margin: 5px 0 0;
+  margin: 4px 0 0;
   color: #a8a29e;
-  font-size: 13px;
-  line-height: 1.45;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .story-panel textarea {
@@ -363,26 +363,26 @@ button:disabled {
 
 .word-panel-content {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
 }
 
 .word-form,
 .word-entry {
   display: grid;
-  grid-template-columns: minmax(110px, 0.8fr) minmax(120px, 0.9fr) minmax(170px, 1.15fr) minmax(170px, 1.15fr) auto;
-  gap: 8px;
+  grid-template-columns: minmax(110px, 0.95fr) minmax(120px, 1fr) auto;
+  gap: 6px;
   align-items: end;
 }
 
 .word-form {
   border-bottom: 1px solid #2b2b2f;
-  padding-bottom: 10px;
+  padding-bottom: 8px;
 }
 
 .word-field {
   display: grid;
-  gap: 5px;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -396,10 +396,10 @@ button:disabled {
   width: 100%;
   min-width: 0;
   border: 1px solid #3f3f46;
-  border-radius: 8px;
+  border-radius: 7px;
   background: #0f0f10;
   color: #fafaf9;
-  padding: 8px 9px;
+  padding: 6px 8px;
   outline: none;
 }
 
@@ -409,22 +409,41 @@ button:disabled {
 
 .word-entry-list {
   display: grid;
-  gap: 8px;
-  max-height: min(340px, 42vh);
+  gap: 6px;
+  max-height: min(260px, 34vh);
   overflow: auto;
   padding-right: 3px;
 }
 
 .word-entry {
   border: 1px solid #323237;
-  border-radius: 10px;
+  border-radius: 8px;
   background: #101010;
-  padding: 10px;
+  padding: 8px;
 }
 
 .word-add-button,
 .word-delete-button {
-  min-height: 38px;
+  min-height: 32px;
+}
+
+.word-extra-fields {
+  grid-column: 1 / -1;
+}
+
+.word-extra-fields summary {
+  width: fit-content;
+  color: #c7c2bd;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.word-extra-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 6px;
 }
 
 .story-panel {
@@ -937,6 +956,7 @@ button:disabled {
   .summary-grid,
   .sentence-form,
   .sentence-body,
+  .word-extra-grid,
   .word-form,
   .word-entry {
     grid-template-columns: 1fr;

@@ -783,28 +783,33 @@ function VocabularyPanel({
             />
           </label>
 
-          <label className="word-field">
-            <span>게임 문장</span>
-            <input
-              list="edith-finch-sentence-options"
-              value={vocabularyForm.gameExample}
-              onChange={(event) => updateVocabularyForm("gameExample", event.target.value)}
-              placeholder="I remember."
-            />
-          </label>
-
-          <label className="word-field">
-            <span>내 문장</span>
-            <input
-              value={vocabularyForm.myExample}
-              onChange={(event) => updateVocabularyForm("myExample", event.target.value)}
-              placeholder="I remember my first day."
-            />
-          </label>
-
           <button className="button primary word-add-button" type="submit">
             추가
           </button>
+
+          <details className="word-extra-fields">
+            <summary>예문</summary>
+            <div className="word-extra-grid">
+              <label className="word-field">
+                <span>게임 문장</span>
+                <input
+                  list="edith-finch-sentence-options"
+                  value={vocabularyForm.gameExample}
+                  onChange={(event) => updateVocabularyForm("gameExample", event.target.value)}
+                  placeholder="I remember."
+                />
+              </label>
+
+              <label className="word-field">
+                <span>내 문장</span>
+                <input
+                  value={vocabularyForm.myExample}
+                  onChange={(event) => updateVocabularyForm("myExample", event.target.value)}
+                  placeholder="I remember my first day."
+                />
+              </label>
+            </div>
+          </details>
         </form>
 
         <datalist id="edith-finch-sentence-options">
@@ -853,27 +858,32 @@ function VocabularyEntry({ entry, onDeleteVocabulary, onUpdateVocabulary }) {
         />
       </label>
 
-      <label className="word-field">
-        <span>게임 문장</span>
-        <input
-          value={entry.gameExample}
-          onChange={(event) => onUpdateVocabulary(entry.id, "gameExample", event.target.value)}
-          aria-label={`${entry.word} 게임 문장`}
-        />
-      </label>
-
-      <label className="word-field">
-        <span>내 문장</span>
-        <input
-          value={entry.myExample}
-          onChange={(event) => onUpdateVocabulary(entry.id, "myExample", event.target.value)}
-          aria-label={`${entry.word} 내 문장`}
-        />
-      </label>
-
       <button className="button small danger word-delete-button" type="button" onClick={() => onDeleteVocabulary(entry.id)}>
         삭제
       </button>
+
+      <details className="word-extra-fields">
+        <summary>예문</summary>
+        <div className="word-extra-grid">
+          <label className="word-field">
+            <span>게임 문장</span>
+            <input
+              value={entry.gameExample}
+              onChange={(event) => onUpdateVocabulary(entry.id, "gameExample", event.target.value)}
+              aria-label={`${entry.word} 게임 문장`}
+            />
+          </label>
+
+          <label className="word-field">
+            <span>내 문장</span>
+            <input
+              value={entry.myExample}
+              onChange={(event) => onUpdateVocabulary(entry.id, "myExample", event.target.value)}
+              aria-label={`${entry.word} 내 문장`}
+            />
+          </label>
+        </div>
+      </details>
     </article>
   );
 }
