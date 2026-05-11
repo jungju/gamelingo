@@ -869,6 +869,10 @@ function VocabularyEditorDrawer({ vocabulary, onClose, onSaveVocabulary }) {
     onClose();
   }
 
+  function resetVocabularyText() {
+    setDraftText(formatVocabularyText(createDefaultVocabularyEntries()));
+  }
+
   return (
     <div className="story-drawer-layer" role="presentation" onClick={onClose}>
       <aside
@@ -897,6 +901,9 @@ function VocabularyEditorDrawer({ vocabulary, onClose, onSaveVocabulary }) {
           />
 
           <div className="button-row">
+            <button className="button secondary" type="button" onClick={resetVocabularyText}>
+              리셋
+            </button>
             <button className="button primary" type="submit">
               저장
             </button>
