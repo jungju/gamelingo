@@ -171,15 +171,6 @@ function createEmptySentenceForm() {
   };
 }
 
-function createEmptyVocabularyForm() {
-  return {
-    word: "",
-    meaning: "",
-    gameExample: "",
-    myExample: "",
-  };
-}
-
 function createId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
     return crypto.randomUUID();
@@ -266,6 +257,48 @@ function normalizeVocabularyEntry(entry) {
     gameExample: typeof entry.gameExample === "string" ? entry.gameExample : "",
     myExample: typeof entry.myExample === "string" ? entry.myExample : "",
   };
+}
+
+function formatVocabularyText(vocabulary) {
+  return vocabulary.map((entry) => `${entry.word}: ${entry.meaning}`.trim()).join("\n");
+}
+
+function parseVocabularyText(vocabularyText, existingVocabulary = []) {
+  const existingEntriesByWord = existingVocabulary.reduce((entriesByWord, entry) => {
+    const key = entry.word.toLowerCase();
+    const entries = entriesByWord.get(key) || [];
+    entriesByWord.set(key, [...entries, entry]);
+    return entriesByWord;
+  }, new Map());
+
+  return vocabularyText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const delimiterIndex = line.indexOf(":");
+      const word = (delimiterIndex >= 0 ? line.slice(0, delimiterIndex) : line).trim();
+      const meaning = delimiterIndex >= 0 ? line.slice(delimiterIndex + 1).trim() : "";
+
+      if (!word) return null;
+
+      const key = word.toLowerCase();
+      const existingEntries = existingEntriesByWord.get(key) || [];
+      const existingEntry = existingEntries[0];
+
+      if (existingEntry) {
+        existingEntriesByWord.set(key, existingEntries.slice(1));
+      }
+
+      return normalizeVocabularyEntry({
+        id: existingEntry?.id || createVocabularyId(),
+        word,
+        meaning,
+        gameExample: existingEntry?.gameExample || "",
+        myExample: existingEntry?.myExample || "",
+      });
+    })
+    .filter(Boolean);
 }
 
 function normalizeMissionChecks(missionChecks) {
@@ -409,6 +442,7 @@ function EdithFinchPage({ data, setData, onGoHome }) {
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isFamilyTreeOpen, setIsFamilyTreeOpen] = useState(false);
   const [isStoryDrawerOpen, setIsStoryDrawerOpen] = useState(false);
+  const [isVocabularyDrawerOpen, setIsVocabularyDrawerOpen] = useState(false);
 
   const sentenceCount = data.sentences.length;
   const vocabularyCount = data.vocabulary.length;
@@ -447,38 +481,10 @@ function EdithFinchPage({ data, setData, onGoHome }) {
     }));
   }
 
-  function addVocabularyEntry(entry) {
-    const nextEntry = normalizeVocabularyEntry({
-      id: createVocabularyId(),
-      ...entry,
-    });
-
-    if (!nextEntry) return;
-
+  function updateVocabularyFromText(vocabularyText) {
     setData((previousData) => ({
       ...previousData,
-      vocabulary: [nextEntry, ...previousData.vocabulary],
-    }));
-  }
-
-  function updateVocabularyEntry(entryId, field, value) {
-    setData((previousData) => ({
-      ...previousData,
-      vocabulary: previousData.vocabulary.map((entry) =>
-        entry.id === entryId
-          ? {
-              ...entry,
-              [field]: value,
-            }
-          : entry
-      ),
-    }));
-  }
-
-  function deleteVocabularyEntry(entryId) {
-    setData((previousData) => ({
-      ...previousData,
-      vocabulary: previousData.vocabulary.filter((entry) => entry.id !== entryId),
+      vocabulary: parseVocabularyText(vocabularyText, previousData.vocabulary),
     }));
   }
 
@@ -609,9 +615,7 @@ function EdithFinchPage({ data, setData, onGoHome }) {
 
       <VocabularyPanel
         vocabulary={data.vocabulary}
-        onAddVocabulary={addVocabularyEntry}
-        onDeleteVocabulary={deleteVocabularyEntry}
-        onUpdateVocabulary={updateVocabularyEntry}
+        onOpenEditor={() => setIsVocabularyDrawerOpen(true)}
       />
 
       <section className="study-layout">
@@ -653,6 +657,13 @@ function EdithFinchPage({ data, setData, onGoHome }) {
         onOpen={() => setIsStoryDrawerOpen(true)}
         onUpdateMemo={updateStudyMemo}
       />
+      {isVocabularyDrawerOpen ? (
+        <VocabularyEditorDrawer
+          vocabulary={data.vocabulary}
+          onClose={() => setIsVocabularyDrawerOpen(false)}
+          onSaveVocabulary={updateVocabularyFromText}
+        />
+      ) : null}
       <FamilyTreeReference isOpen={isFamilyTreeOpen} onClose={() => setIsFamilyTreeOpen(false)} onOpen={() => setIsFamilyTreeOpen(true)} />
     </div>
   );
@@ -725,30 +736,7 @@ function FamilyTreeReference({ isOpen, onClose, onOpen }) {
   );
 }
 
-function VocabularyPanel({ vocabulary, onAddVocabulary, onDeleteVocabulary, onUpdateVocabulary }) {
-  const [vocabularyForm, setVocabularyForm] = useState(createEmptyVocabularyForm());
-
-  function updateVocabularyForm(field, value) {
-    setVocabularyForm((previousForm) => ({
-      ...previousForm,
-      [field]: value,
-    }));
-  }
-
-  function saveVocabularyEntry(event) {
-    event.preventDefault();
-
-    if (!vocabularyForm.word.trim()) return;
-
-    onAddVocabulary({
-      word: vocabularyForm.word.trim(),
-      meaning: vocabularyForm.meaning.trim(),
-      gameExample: "",
-      myExample: "",
-    });
-    setVocabularyForm(createEmptyVocabularyForm());
-  }
-
+function VocabularyPanel({ vocabulary, onOpenEditor }) {
   return (
     <section className="panel word-panel">
       <div className="word-panel-heading">
@@ -759,43 +747,15 @@ function VocabularyPanel({ vocabulary, onAddVocabulary, onDeleteVocabulary, onUp
       </div>
 
       <div className="word-panel-content">
-        <form className="word-form" onSubmit={saveVocabularyEntry}>
-          <label className="word-field">
-            <input
-              value={vocabularyForm.word}
-              onChange={(event) => updateVocabularyForm("word", event.target.value)}
-              aria-label="단어"
-              placeholder="단어"
-              required
-            />
-          </label>
-
-          <label className="word-field">
-            <input
-              value={vocabularyForm.meaning}
-              onChange={(event) => updateVocabularyForm("meaning", event.target.value)}
-              aria-label="뜻"
-              placeholder="뜻"
-            />
-          </label>
-
-          <button className="button primary word-add-button" type="submit">
-            추가
-          </button>
-        </form>
+        <button className="button small secondary word-edit-button" type="button" onClick={onOpenEditor}>
+          단어 수정
+        </button>
 
         <div className="word-entry-list" aria-label="단어장">
           {vocabulary.length === 0 ? (
             <p className="empty-message">아직 저장한 단어가 없습니다.</p>
           ) : (
-            vocabulary.map((entry) => (
-              <VocabularyEntry
-                key={entry.id}
-                entry={entry}
-                onDeleteVocabulary={onDeleteVocabulary}
-                onUpdateVocabulary={onUpdateVocabulary}
-              />
-            ))
+            vocabulary.map((entry) => <VocabularyEntry key={entry.id} entry={entry} />)
           )}
         </div>
       </div>
@@ -803,37 +763,67 @@ function VocabularyPanel({ vocabulary, onAddVocabulary, onDeleteVocabulary, onUp
   );
 }
 
-function VocabularyEntry({ entry, onDeleteVocabulary, onUpdateVocabulary }) {
+function VocabularyEntry({ entry }) {
   return (
-    <article className="word-entry">
-      <label className="word-field">
-        <input
-          value={entry.word}
-          onChange={(event) => onUpdateVocabulary(entry.id, "word", event.target.value)}
-          aria-label="단어"
-          placeholder="단어"
-        />
-      </label>
+    <p className="word-entry">
+      <strong>{entry.word}:</strong> {entry.meaning}
+    </p>
+  );
+}
 
-      <label className="word-field">
-        <input
-          value={entry.meaning}
-          onChange={(event) => onUpdateVocabulary(entry.id, "meaning", event.target.value)}
-          aria-label={`${entry.word} 뜻`}
-          placeholder="뜻"
-        />
-      </label>
+function VocabularyEditorDrawer({ vocabulary, onClose, onSaveVocabulary }) {
+  const [draftText, setDraftText] = useState(() => formatVocabularyText(vocabulary));
 
-      <button
-        className="button small danger word-delete-button"
-        type="button"
-        onClick={() => onDeleteVocabulary(entry.id)}
-        aria-label={`${entry.word || "단어"} 삭제`}
-        title="삭제"
+  useEffect(() => {
+    function closeWithEscape(event) {
+      if (event.key === "Escape") onClose();
+    }
+
+    window.addEventListener("keydown", closeWithEscape);
+    return () => window.removeEventListener("keydown", closeWithEscape);
+  }, [onClose]);
+
+  function saveVocabularyText(event) {
+    event.preventDefault();
+    onSaveVocabulary(draftText);
+    onClose();
+  }
+
+  return (
+    <div className="story-drawer-layer" role="presentation" onClick={onClose}>
+      <aside
+        className="story-drawer-panel"
+        id="vocabulary-editor-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="vocabulary-editor-title"
+        onClick={(event) => event.stopPropagation()}
       >
-        ×
-      </button>
-    </article>
+        <form className="drawer-form" onSubmit={saveVocabularyText}>
+          <div className="panel-heading">
+            <div>
+              <h2 id="vocabulary-editor-title">단어 수정</h2>
+            </div>
+            <button className="button small secondary" type="button" onClick={onClose}>
+              닫기
+            </button>
+          </div>
+
+          <textarea
+            value={draftText}
+            onChange={(event) => setDraftText(event.target.value)}
+            aria-label="단어 수정"
+            placeholder={"remember: 기억하다\nafraid: 두려운"}
+          />
+
+          <div className="button-row">
+            <button className="button primary" type="submit">
+              저장
+            </button>
+          </div>
+        </form>
+      </aside>
+    </div>
   );
 }
 

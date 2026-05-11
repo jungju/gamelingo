@@ -321,11 +321,11 @@ button:disabled {
   right: 16px;
   z-index: 18;
   display: grid;
-  width: min(300px, calc(100vw - 32px));
+  width: min(240px, calc(100vw - 32px));
   max-height: calc(100vh - 32px);
   overflow: auto;
   grid-template-columns: 1fr;
-  gap: 10px;
+  gap: 8px;
   align-items: start;
   transform: translateY(-50%);
 }
@@ -340,77 +340,38 @@ button:disabled {
 .word-panel-heading h2 {
   margin: 0;
   color: #fafaf9;
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .word-panel-content {
   display: grid;
-  gap: 8px;
-  min-width: 0;
-}
-
-.word-form,
-.word-entry {
-  display: grid;
-  grid-template-columns: minmax(72px, 0.9fr) minmax(88px, 1fr) auto;
   gap: 6px;
-  align-items: end;
-}
-
-.word-form {
-  border-bottom: 1px solid #2b2b2f;
-  padding-bottom: 8px;
-}
-
-.word-field {
-  display: grid;
-  gap: 4px;
   min-width: 0;
 }
 
-.word-field input {
+.word-edit-button {
   width: 100%;
-  min-width: 0;
-  border: 1px solid #3f3f46;
-  border-radius: 7px;
-  background: #0f0f10;
-  color: #fafaf9;
-  padding: 6px 8px;
-  outline: none;
-}
-
-.word-field input:focus {
-  border-color: #d6d3d1;
 }
 
 .word-entry-list {
   display: grid;
-  gap: 6px;
-  max-height: min(260px, 34vh);
+  gap: 3px;
+  max-height: min(220px, 36vh);
   overflow: auto;
   padding-right: 3px;
 }
 
 .word-entry {
-  border: 1px solid #323237;
-  border-radius: 8px;
-  background: #101010;
-  padding: 8px;
+  margin: 0;
+  color: #d6d3d1;
+  font-size: 13px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
-.word-add-button,
-.word-delete-button {
-  min-height: 32px;
-}
-
-.word-delete-button {
-  display: inline-grid;
-  place-items: center;
-  width: 32px;
-  padding: 0;
-  border-radius: 999px;
-  font-size: 17px;
-  line-height: 1;
+.word-entry strong {
+  color: #fafaf9;
+  font-weight: 800;
 }
 
 .story-drawer-tab {
@@ -449,9 +410,22 @@ button:disabled {
   animation: slide-drawer-in 160ms ease-out;
 }
 
+.drawer-form {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  grid-row: 1 / -1;
+  height: 100%;
+  min-height: 0;
+}
+
+.drawer-form .panel-heading {
+  margin-bottom: 0;
+}
+
 .story-drawer-panel textarea {
   width: 100%;
-  min-height: 0;
+  min-height: min(460px, calc(100vh - 160px));
   border: 1px solid #3f3f46;
   border-radius: 9px;
   background: #0f0f10;
@@ -925,7 +899,7 @@ button:disabled {
 
 @media (min-width: 1181px) {
   .study-page {
-    padding-right: 320px;
+    padding-right: 260px;
   }
 }
 
@@ -1007,9 +981,7 @@ button:disabled {
   }
 
   .button-row .button,
-  .card-actions .button,
-  .word-add-button,
-  .word-delete-button {
+  .card-actions .button {
     flex: 1 1 auto;
   }
 
