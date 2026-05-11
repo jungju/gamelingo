@@ -316,7 +316,7 @@ button:disabled {
 .word-entry-list {
   display: grid;
   gap: 3px;
-  max-height: min(220px, 36vh);
+  max-height: min(680px, calc(100vh - 140px));
   overflow: auto;
   padding-right: 3px;
 }
