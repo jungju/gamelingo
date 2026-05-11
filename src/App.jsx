@@ -50,41 +50,56 @@ const sampleSentences = [
 ];
 
 const defaultVocabularyEntries = [
-  {
-    id: "vocab-remember",
-    word: "remember",
-    meaning: "기억하다",
-    gameExample: "I remember.",
-    myExample: "I remember my first day at work.",
-  },
-  {
-    id: "vocab-afraid",
-    word: "afraid",
-    meaning: "두려운",
-    gameExample: "I was afraid.",
-    myExample: "I was afraid to ask.",
-  },
-  {
-    id: "vocab-explain",
-    word: "explain",
-    meaning: "설명하다",
-    gameExample: "I couldn't explain it.",
-    myExample: "I can explain my idea.",
-  },
-  {
-    id: "vocab-remains",
-    word: "remains",
-    meaning: "남아 있는 것",
-    gameExample: "What remains?",
-    myExample: "Only the memory remains.",
-  },
-  {
-    id: "vocab-family",
-    word: "family",
-    meaning: "가족",
-    gameExample: "My family lived here.",
-    myExample: "My family likes quiet weekends.",
-  },
+  { id: "vocab-alive", word: "alive", meaning: "살아 있는" },
+  { id: "vocab-attic", word: "attic", meaning: "다락방" },
+  { id: "vocab-basement", word: "basement", meaning: "지하실" },
+  { id: "vocab-bathroom", word: "bathroom", meaning: "욕실" },
+  { id: "vocab-bedroom", word: "bedroom", meaning: "침실" },
+  { id: "vocab-branch", word: "branch", meaning: "나뭇가지, 가지" },
+  { id: "vocab-cannery", word: "cannery", meaning: "통조림 공장" },
+  { id: "vocab-cemetery", word: "cemetery", meaning: "묘지" },
+  { id: "vocab-closet", word: "closet", meaning: "벽장, 옷장" },
+  { id: "vocab-crawlspace", word: "crawlspace", meaning: "기어 들어가는 좁은 공간" },
+  { id: "vocab-curse", word: "curse", meaning: "저주" },
+  { id: "vocab-death", word: "death", meaning: "죽음" },
+  { id: "vocab-disappear", word: "disappear", meaning: "사라지다" },
+  { id: "vocab-dream", word: "dream", meaning: "꿈" },
+  { id: "vocab-family", word: "family", meaning: "가족" },
+  { id: "vocab-ferry", word: "ferry", meaning: "연락선, 페리" },
+  { id: "vocab-finch", word: "Finch", meaning: "핀치, 핀치 가문" },
+  { id: "vocab-forest", word: "forest", meaning: "숲" },
+  { id: "vocab-funeral", word: "funeral", meaning: "장례식" },
+  { id: "vocab-grave", word: "grave", meaning: "무덤" },
+  { id: "vocab-hallway", word: "hallway", meaning: "복도" },
+  { id: "vocab-history", word: "history", meaning: "역사, 과거" },
+  { id: "vocab-house", word: "house", meaning: "집" },
+  { id: "vocab-inherit", word: "inherit", meaning: "물려받다, 상속받다" },
+  { id: "vocab-island", word: "island", meaning: "섬" },
+  { id: "vocab-journal", word: "journal", meaning: "일기, 기록장" },
+  { id: "vocab-key", word: "key", meaning: "열쇠" },
+  { id: "vocab-letter", word: "letter", meaning: "편지" },
+  { id: "vocab-library", word: "library", meaning: "서재, 도서관" },
+  { id: "vocab-map", word: "map", meaning: "지도" },
+  { id: "vocab-memory", word: "memory", meaning: "기억" },
+  { id: "vocab-monster", word: "monster", meaning: "괴물" },
+  { id: "vocab-nursery", word: "nursery", meaning: "아이 방, 유아실" },
+  { id: "vocab-passage", word: "passage", meaning: "통로" },
+  { id: "vocab-portrait", word: "portrait", meaning: "초상화" },
+  { id: "vocab-remains", word: "remains", meaning: "남은 것, 유해" },
+  { id: "vocab-room", word: "room", meaning: "방" },
+  { id: "vocab-sailor", word: "sailor", meaning: "선원" },
+  { id: "vocab-secret", word: "secret", meaning: "비밀" },
+  { id: "vocab-shore", word: "shore", meaning: "해안, 바닷가" },
+  { id: "vocab-story", word: "story", meaning: "이야기" },
+  { id: "vocab-survive", word: "survive", meaning: "살아남다" },
+  { id: "vocab-swing", word: "swing", meaning: "그네" },
+  { id: "vocab-tower", word: "tower", meaning: "탑" },
+  { id: "vocab-tree", word: "tree", meaning: "나무" },
+  { id: "vocab-tunnel", word: "tunnel", meaning: "터널" },
+  { id: "vocab-unlock", word: "unlock", meaning: "잠금을 풀다" },
+  { id: "vocab-wedding", word: "wedding", meaning: "결혼식" },
+  { id: "vocab-will", word: "will", meaning: "유언장" },
+  { id: "vocab-window", word: "window", meaning: "창문" },
 ];
 
 const edithFinchGuide = {
@@ -205,15 +220,35 @@ function normalizeEdithFinchData(data) {
     return defaultData;
   }
 
+  const vocabulary = normalizeVocabularyEntries(data.vocabulary, data.wordMemo);
+
   return {
     wordMemo: typeof data.wordMemo === "string" ? data.wordMemo : defaultData.wordMemo,
-    vocabulary: normalizeVocabularyEntries(data.vocabulary, data.wordMemo),
+    vocabulary: isLegacySampleVocabulary(vocabulary) ? defaultData.vocabulary : vocabulary,
     storyMemo: typeof data.storyMemo === "string" ? data.storyMemo : defaultData.storyMemo,
     missionChecks: normalizeMissionChecks(data.missionChecks),
     sentences: Array.isArray(data.sentences)
       ? data.sentences.map(normalizeSentence).filter(Boolean)
       : defaultData.sentences,
   };
+}
+
+function isLegacySampleVocabulary(vocabulary) {
+  const legacySampleVocabulary = [
+    ["remember", "기억하다"],
+    ["afraid", "두려운"],
+    ["explain", "설명하다"],
+    ["remains", "남아 있는 것"],
+    ["family", "가족"],
+  ];
+
+  return (
+    vocabulary.length === legacySampleVocabulary.length &&
+    legacySampleVocabulary.every(([word, meaning], index) => {
+      const entry = vocabulary[index];
+      return entry?.word === word && entry?.meaning === meaning;
+    })
+  );
 }
 
 function normalizeVocabularyEntries(vocabulary, legacyWordMemo) {
