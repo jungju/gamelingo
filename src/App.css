@@ -291,7 +291,7 @@ button:disabled {
 
 .study-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   align-items: start;
 }
@@ -304,14 +304,13 @@ button:disabled {
 
 .study-main-grid {
   display: grid;
-  grid-template-columns: minmax(240px, 300px) minmax(420px, 1fr);
+  grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
   gap: 14px;
   align-items: start;
 }
 
 .left-column,
-.right-column,
-.memo-column {
+.right-column {
   display: grid;
   gap: 14px;
 }
@@ -322,7 +321,7 @@ button:disabled {
   right: 16px;
   z-index: 18;
   display: grid;
-  width: min(340px, calc(100vw - 32px));
+  width: min(300px, calc(100vw - 32px));
   max-height: calc(100vh - 32px);
   overflow: auto;
   grid-template-columns: 1fr;
@@ -344,21 +343,6 @@ button:disabled {
   font-size: 16px;
 }
 
-.story-panel textarea {
-  width: 100%;
-  border: 1px solid #3f3f46;
-  border-radius: 9px;
-  background: #0f0f10;
-  color: #fafaf9;
-  padding: 9px 10px;
-  outline: none;
-  resize: vertical;
-}
-
-.story-panel textarea:focus {
-  border-color: #d6d3d1;
-}
-
 .word-panel-content {
   display: grid;
   gap: 8px;
@@ -368,7 +352,7 @@ button:disabled {
 .word-form,
 .word-entry {
   display: grid;
-  grid-template-columns: minmax(110px, 0.95fr) minmax(120px, 1fr) auto;
+  grid-template-columns: minmax(72px, 0.9fr) minmax(88px, 1fr) auto;
   gap: 6px;
   align-items: end;
 }
@@ -419,32 +403,76 @@ button:disabled {
   min-height: 32px;
 }
 
-.word-extra-fields {
-  grid-column: 1 / -1;
+.word-delete-button {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  padding: 0;
+  border-radius: 999px;
+  font-size: 17px;
+  line-height: 1;
 }
 
-.word-extra-fields summary {
-  width: fit-content;
-  color: #c7c2bd;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 700;
+.story-drawer-tab {
+  position: fixed;
+  top: 104px;
+  right: 0;
+  z-index: 19;
+  border-right: 0;
+  border-radius: 9px 0 0 9px;
+  padding: 9px 10px;
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.32);
 }
 
-.word-extra-grid {
+.story-drawer-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 34;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(0, 0, 0, 0.38);
+}
+
+.story-drawer-panel {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-  margin-top: 6px;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  width: min(420px, calc(100vw - 28px));
+  min-height: 0;
+  max-height: calc(100vh - 32px);
+  margin: 16px;
+  border: 1px solid #3f3f46;
+  border-radius: 12px;
+  background: #18181b;
+  padding: 14px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.52);
+  animation: slide-drawer-in 160ms ease-out;
 }
 
-.story-panel {
-  position: sticky;
-  top: 126px;
+.story-drawer-panel textarea {
+  width: 100%;
+  min-height: 0;
+  border: 1px solid #3f3f46;
+  border-radius: 9px;
+  background: #0f0f10;
+  color: #fafaf9;
+  padding: 9px 10px;
+  outline: none;
+  resize: none;
 }
 
-.story-panel textarea {
-  min-height: calc(100vh - 250px);
+.story-drawer-panel textarea:focus {
+  border-color: #d6d3d1;
+}
+
+@keyframes slide-drawer-in {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
 }
 
 .panel-heading {
@@ -897,7 +925,17 @@ button:disabled {
 
 @media (min-width: 1181px) {
   .study-page {
-    padding-right: 360px;
+    padding-right: 320px;
+  }
+}
+
+@media (max-width: 1180px) {
+  .word-panel {
+    position: static;
+    width: auto;
+    max-height: none;
+    overflow: visible;
+    transform: none;
   }
 }
 
@@ -909,25 +947,12 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
-  .word-panel,
-  .story-panel {
-    position: static;
-  }
-
   .word-panel {
     grid-template-columns: 1fr;
-    width: auto;
-    max-height: none;
-    overflow: visible;
-    transform: none;
   }
 
   .study-page {
     padding-right: 0;
-  }
-
-  .story-panel textarea {
-    min-height: 220px;
   }
 
   .summary-grid {
@@ -961,10 +986,7 @@ button:disabled {
 
   .summary-grid,
   .sentence-form,
-  .sentence-body,
-  .word-extra-grid,
-  .word-form,
-  .word-entry {
+  .sentence-body {
     grid-template-columns: 1fr;
   }
 

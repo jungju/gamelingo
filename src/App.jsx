@@ -408,6 +408,7 @@ function EdithFinchPage({ data, setData, onGoHome }) {
   const [sentenceForm, setSentenceForm] = useState(createEmptySentenceForm());
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isFamilyTreeOpen, setIsFamilyTreeOpen] = useState(false);
+  const [isStoryDrawerOpen, setIsStoryDrawerOpen] = useState(false);
 
   const sentenceCount = data.sentences.length;
   const vocabularyCount = data.vocabulary.length;
@@ -607,7 +608,6 @@ function EdithFinchPage({ data, setData, onGoHome }) {
       </header>
 
       <VocabularyPanel
-        sentenceOptions={data.sentences}
         vocabulary={data.vocabulary}
         onAddVocabulary={addVocabularyEntry}
         onDeleteVocabulary={deleteVocabularyEntry}
@@ -643,13 +643,16 @@ function EdithFinchPage({ data, setData, onGoHome }) {
             </div>
           </div>
         </div>
-
-        <div className="memo-column">
-          <StoryMemoPanel storyMemo={data.storyMemo} onUpdateMemo={updateStudyMemo} />
-        </div>
       </section>
 
       <GuideModal guide={edithFinchGuide} isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
+      <StoryMemoDrawer
+        storyMemo={data.storyMemo}
+        isOpen={isStoryDrawerOpen}
+        onClose={() => setIsStoryDrawerOpen(false)}
+        onOpen={() => setIsStoryDrawerOpen(true)}
+        onUpdateMemo={updateStudyMemo}
+      />
       <FamilyTreeReference isOpen={isFamilyTreeOpen} onClose={() => setIsFamilyTreeOpen(false)} onOpen={() => setIsFamilyTreeOpen(true)} />
     </div>
   );
@@ -722,13 +725,7 @@ function FamilyTreeReference({ isOpen, onClose, onOpen }) {
   );
 }
 
-function VocabularyPanel({
-  sentenceOptions,
-  vocabulary,
-  onAddVocabulary,
-  onDeleteVocabulary,
-  onUpdateVocabulary,
-}) {
+function VocabularyPanel({ vocabulary, onAddVocabulary, onDeleteVocabulary, onUpdateVocabulary }) {
   const [vocabularyForm, setVocabularyForm] = useState(createEmptyVocabularyForm());
 
   function updateVocabularyForm(field, value) {
@@ -746,8 +743,8 @@ function VocabularyPanel({
     onAddVocabulary({
       word: vocabularyForm.word.trim(),
       meaning: vocabularyForm.meaning.trim(),
-      gameExample: vocabularyForm.gameExample.trim(),
-      myExample: vocabularyForm.myExample.trim(),
+      gameExample: "",
+      myExample: "",
     });
     setVocabularyForm(createEmptyVocabularyForm());
   }
@@ -785,37 +782,7 @@ function VocabularyPanel({
           <button className="button primary word-add-button" type="submit">
             추가
           </button>
-
-          <details className="word-extra-fields">
-            <summary>예문</summary>
-            <div className="word-extra-grid">
-              <label className="word-field">
-                <input
-                  list="edith-finch-sentence-options"
-                  value={vocabularyForm.gameExample}
-                  onChange={(event) => updateVocabularyForm("gameExample", event.target.value)}
-                  aria-label="게임 문장"
-                  placeholder="게임 문장"
-                />
-              </label>
-
-              <label className="word-field">
-                <input
-                  value={vocabularyForm.myExample}
-                  onChange={(event) => updateVocabularyForm("myExample", event.target.value)}
-                  aria-label="내 문장"
-                  placeholder="내 문장"
-                />
-              </label>
-            </div>
-          </details>
         </form>
-
-        <datalist id="edith-finch-sentence-options">
-          {sentenceOptions.map((sentence) => (
-            <option key={sentence.id} value={sentence.original} />
-          ))}
-        </datalist>
 
         <div className="word-entry-list" aria-label="단어장">
           {vocabulary.length === 0 ? (
@@ -857,53 +824,73 @@ function VocabularyEntry({ entry, onDeleteVocabulary, onUpdateVocabulary }) {
         />
       </label>
 
-      <button className="button small danger word-delete-button" type="button" onClick={() => onDeleteVocabulary(entry.id)}>
-        삭제
+      <button
+        className="button small danger word-delete-button"
+        type="button"
+        onClick={() => onDeleteVocabulary(entry.id)}
+        aria-label={`${entry.word || "단어"} 삭제`}
+        title="삭제"
+      >
+        ×
       </button>
-
-      <details className="word-extra-fields">
-        <summary>예문</summary>
-        <div className="word-extra-grid">
-          <label className="word-field">
-            <input
-              value={entry.gameExample}
-              onChange={(event) => onUpdateVocabulary(entry.id, "gameExample", event.target.value)}
-              aria-label={`${entry.word} 게임 문장`}
-              placeholder="게임 문장"
-            />
-          </label>
-
-          <label className="word-field">
-            <input
-              value={entry.myExample}
-              onChange={(event) => onUpdateVocabulary(entry.id, "myExample", event.target.value)}
-              aria-label={`${entry.word} 내 문장`}
-              placeholder="내 문장"
-            />
-          </label>
-        </div>
-      </details>
     </article>
   );
 }
 
-function StoryMemoPanel({ storyMemo, onUpdateMemo }) {
-  return (
-    <section className="panel story-panel">
-      <div className="panel-heading">
-        <div>
-          <h2>스토리 메모</h2>
-          <p>장면, 인물 관계, 다음에 기억할 내용을 넓게 적습니다.</p>
-        </div>
-      </div>
+function StoryMemoDrawer({ storyMemo, isOpen, onClose, onOpen, onUpdateMemo }) {
+  useEffect(() => {
+    if (!isOpen) return undefined;
 
-      <textarea
-        value={storyMemo}
-        onChange={(event) => onUpdateMemo("storyMemo", event.target.value)}
-        aria-label="스토리 메모"
-        placeholder="오늘 본 장면, 인물 관계, 다음에 기억할 내용"
-      />
-    </section>
+    function closeWithEscape(event) {
+      if (event.key === "Escape") onClose();
+    }
+
+    window.addEventListener("keydown", closeWithEscape);
+    return () => window.removeEventListener("keydown", closeWithEscape);
+  }, [isOpen, onClose]);
+
+  return (
+    <>
+      <button
+        className="button secondary story-drawer-tab"
+        type="button"
+        onClick={onOpen}
+        aria-expanded={isOpen}
+        aria-controls="story-memo-drawer"
+      >
+        스토리 메모
+      </button>
+
+      {isOpen ? (
+        <div className="story-drawer-layer" role="presentation" onClick={onClose}>
+          <aside
+            className="story-drawer-panel"
+            id="story-memo-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="story-memo-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="panel-heading">
+              <div>
+                <h2 id="story-memo-title">스토리 메모</h2>
+                <p>장면, 인물 관계, 다음에 기억할 내용을 적습니다.</p>
+              </div>
+              <button className="button small secondary" type="button" onClick={onClose}>
+                닫기
+              </button>
+            </div>
+
+            <textarea
+              value={storyMemo}
+              onChange={(event) => onUpdateMemo("storyMemo", event.target.value)}
+              aria-label="스토리 메모"
+              placeholder="오늘 본 장면, 인물 관계, 다음에 기억할 내용"
+            />
+          </aside>
+        </div>
+      ) : null}
+    </>
   );
 }
 
