@@ -644,6 +644,17 @@ function EdithFinchPage({ data, setData, onGoHome }) {
           >
             ▦
           </button>
+          <button
+            className="button icon-button secondary"
+            type="button"
+            onClick={() => setIsStoryDrawerOpen(true)}
+            aria-label="스토리 메모"
+            aria-expanded={isStoryDrawerOpen}
+            aria-controls="story-memo-drawer"
+            title="스토리 메모"
+          >
+            ✎
+          </button>
         </div>
       </header>
 
@@ -689,7 +700,6 @@ function EdithFinchPage({ data, setData, onGoHome }) {
         storyMemo={data.storyMemo}
         isOpen={isStoryDrawerOpen}
         onClose={() => setIsStoryDrawerOpen(false)}
-        onOpen={() => setIsStoryDrawerOpen(true)}
         onUpdateMemo={updateStudyMemo}
       />
       {isVocabularyDrawerOpen ? (
@@ -862,7 +872,7 @@ function VocabularyEditorDrawer({ vocabulary, onClose, onSaveVocabulary }) {
   );
 }
 
-function StoryMemoDrawer({ storyMemo, isOpen, onClose, onOpen, onUpdateMemo }) {
+function StoryMemoDrawer({ storyMemo, isOpen, onClose, onUpdateMemo }) {
   useEffect(() => {
     if (!isOpen) return undefined;
 
@@ -874,48 +884,36 @@ function StoryMemoDrawer({ storyMemo, isOpen, onClose, onOpen, onUpdateMemo }) {
     return () => window.removeEventListener("keydown", closeWithEscape);
   }, [isOpen, onClose]);
 
+  if (!isOpen) return null;
+
   return (
-    <>
-      <button
-        className="button secondary story-drawer-tab"
-        type="button"
-        onClick={onOpen}
-        aria-expanded={isOpen}
-        aria-controls="story-memo-drawer"
+    <div className="story-drawer-layer" role="presentation" onClick={onClose}>
+      <aside
+        className="story-drawer-panel"
+        id="story-memo-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="story-memo-title"
+        onClick={(event) => event.stopPropagation()}
       >
-        스토리 메모
-      </button>
-
-      {isOpen ? (
-        <div className="story-drawer-layer" role="presentation" onClick={onClose}>
-          <aside
-            className="story-drawer-panel"
-            id="story-memo-drawer"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="story-memo-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="panel-heading">
-              <div>
-                <h2 id="story-memo-title">스토리 메모</h2>
-                <p>장면, 인물 관계, 다음에 기억할 내용을 적습니다.</p>
-              </div>
-              <button className="button small secondary" type="button" onClick={onClose}>
-                닫기
-              </button>
-            </div>
-
-            <textarea
-              value={storyMemo}
-              onChange={(event) => onUpdateMemo("storyMemo", event.target.value)}
-              aria-label="스토리 메모"
-              placeholder="오늘 본 장면, 인물 관계, 다음에 기억할 내용"
-            />
-          </aside>
+        <div className="panel-heading">
+          <div>
+            <h2 id="story-memo-title">스토리 메모</h2>
+            <p>장면, 인물 관계, 다음에 기억할 내용을 적습니다.</p>
+          </div>
+          <button className="button small secondary" type="button" onClick={onClose}>
+            닫기
+          </button>
         </div>
-      ) : null}
-    </>
+
+        <textarea
+          value={storyMemo}
+          onChange={(event) => onUpdateMemo("storyMemo", event.target.value)}
+          aria-label="스토리 메모"
+          placeholder="오늘 본 장면, 인물 관계, 다음에 기억할 내용"
+        />
+      </aside>
+    </div>
   );
 }
 

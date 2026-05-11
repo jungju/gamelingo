@@ -334,17 +334,6 @@ button:disabled {
   font-weight: 800;
 }
 
-.story-drawer-tab {
-  position: fixed;
-  top: 104px;
-  right: 0;
-  z-index: 19;
-  border-right: 0;
-  border-radius: 9px 0 0 9px;
-  padding: 9px 10px;
-  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.32);
-}
-
 .story-drawer-layer {
   position: fixed;
   inset: 0;
