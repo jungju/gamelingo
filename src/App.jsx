@@ -49,6 +49,44 @@ const sampleSentences = [
   },
 ];
 
+const defaultVocabularyEntries = [
+  {
+    id: "vocab-remember",
+    word: "remember",
+    meaning: "기억하다",
+    gameExample: "I remember.",
+    myExample: "I remember my first day at work.",
+  },
+  {
+    id: "vocab-afraid",
+    word: "afraid",
+    meaning: "두려운",
+    gameExample: "I was afraid.",
+    myExample: "I was afraid to ask.",
+  },
+  {
+    id: "vocab-explain",
+    word: "explain",
+    meaning: "설명하다",
+    gameExample: "I couldn't explain it.",
+    myExample: "I can explain my idea.",
+  },
+  {
+    id: "vocab-remains",
+    word: "remains",
+    meaning: "남아 있는 것",
+    gameExample: "What remains?",
+    myExample: "Only the memory remains.",
+  },
+  {
+    id: "vocab-family",
+    word: "family",
+    meaning: "가족",
+    gameExample: "My family lived here.",
+    myExample: "My family likes quiet weekends.",
+  },
+];
+
 const edithFinchGuide = {
   title: "What Remains of Edith Finch 플레이 미션",
   description:
@@ -118,6 +156,7 @@ function createDefaultMissionChecks() {
 function createDefaultEdithFinchData() {
   return {
     wordMemo: "",
+    vocabulary: createDefaultVocabularyEntries(),
     storyMemo: "",
     missionChecks: createDefaultMissionChecks(),
     sentences: sampleSentences,
@@ -132,11 +171,28 @@ function createEmptySentenceForm() {
   };
 }
 
+function createEmptyVocabularyForm() {
+  return {
+    word: "",
+    meaning: "",
+    gameExample: "",
+    myExample: "",
+  };
+}
+
 function createId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
     return crypto.randomUUID();
   }
   return `sentence-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function createVocabularyId() {
+  return `vocabulary-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function createDefaultVocabularyEntries() {
+  return defaultVocabularyEntries.map((entry) => ({ ...entry }));
 }
 
 function loadEdithFinchData() {
@@ -160,11 +216,55 @@ function normalizeEdithFinchData(data) {
 
   return {
     wordMemo: typeof data.wordMemo === "string" ? data.wordMemo : defaultData.wordMemo,
+    vocabulary: normalizeVocabularyEntries(data.vocabulary, data.wordMemo),
     storyMemo: typeof data.storyMemo === "string" ? data.storyMemo : defaultData.storyMemo,
     missionChecks: normalizeMissionChecks(data.missionChecks),
     sentences: Array.isArray(data.sentences)
       ? data.sentences.map(normalizeSentence).filter(Boolean)
       : defaultData.sentences,
+  };
+}
+
+function normalizeVocabularyEntries(vocabulary, legacyWordMemo) {
+  if (Array.isArray(vocabulary)) {
+    return vocabulary.map(normalizeVocabularyEntry).filter(Boolean);
+  }
+
+  if (typeof legacyWordMemo === "string" && legacyWordMemo.trim()) {
+    return legacyWordMemo
+      .split(/\r?\n|\/|,/)
+      .map((memoLine) => memoLine.trim())
+      .filter(Boolean)
+      .map((memoLine) => {
+        const [word, ...meaningParts] = memoLine.split(/\s+/);
+        return normalizeVocabularyEntry({
+          id: createVocabularyId(),
+          word: word || memoLine,
+          meaning: meaningParts.join(" "),
+        });
+      })
+      .filter(Boolean);
+  }
+
+  return createDefaultVocabularyEntries();
+}
+
+function normalizeVocabularyEntry(entry) {
+  if (!entry || typeof entry !== "object" || typeof entry.word !== "string") {
+    return null;
+  }
+
+  const word = entry.word.trim();
+  if (!word) {
+    return null;
+  }
+
+  return {
+    id: entry.id || createVocabularyId(),
+    word,
+    meaning: typeof entry.meaning === "string" ? entry.meaning : "",
+    gameExample: typeof entry.gameExample === "string" ? entry.gameExample : "",
+    myExample: typeof entry.myExample === "string" ? entry.myExample : "",
   };
 }
 
@@ -310,9 +410,10 @@ function EdithFinchPage({ data, setData, onGoHome }) {
   const [isFamilyTreeOpen, setIsFamilyTreeOpen] = useState(false);
 
   const sentenceCount = data.sentences.length;
+  const vocabularyCount = data.vocabulary.length;
   const mySentenceCount = data.sentences.filter((sentence) => sentence.mySentence.trim()).length;
   const practicedSentenceCount = data.sentences.filter((sentence) => sentence.practiced).length;
-  const progressScore = sentenceCount + mySentenceCount + practicedSentenceCount;
+  const progressScore = sentenceCount + vocabularyCount + mySentenceCount + practicedSentenceCount;
 
   const filteredSentences = useMemo(() => {
     const keyword = searchText.trim().toLowerCase();
@@ -342,6 +443,41 @@ function EdithFinchPage({ data, setData, onGoHome }) {
     setData((previousData) => ({
       ...previousData,
       [field]: value,
+    }));
+  }
+
+  function addVocabularyEntry(entry) {
+    const nextEntry = normalizeVocabularyEntry({
+      id: createVocabularyId(),
+      ...entry,
+    });
+
+    if (!nextEntry) return;
+
+    setData((previousData) => ({
+      ...previousData,
+      vocabulary: [nextEntry, ...previousData.vocabulary],
+    }));
+  }
+
+  function updateVocabularyEntry(entryId, field, value) {
+    setData((previousData) => ({
+      ...previousData,
+      vocabulary: previousData.vocabulary.map((entry) =>
+        entry.id === entryId
+          ? {
+              ...entry,
+              [field]: value,
+            }
+          : entry
+      ),
+    }));
+  }
+
+  function deleteVocabularyEntry(entryId) {
+    setData((previousData) => ({
+      ...previousData,
+      vocabulary: previousData.vocabulary.filter((entry) => entry.id !== entryId),
     }));
   }
 
@@ -460,6 +596,7 @@ function EdithFinchPage({ data, setData, onGoHome }) {
           </button>
           <div className="summary-grid">
             <SummaryCard label="저장 문장" value={sentenceCount} />
+            <SummaryCard label="단어" value={vocabularyCount} />
             <SummaryCard label="내 문장" value={mySentenceCount} />
             <SummaryCard label="연습 완료" value={practicedSentenceCount} />
           </div>
@@ -469,7 +606,13 @@ function EdithFinchPage({ data, setData, onGoHome }) {
         </div>
       </header>
 
-      <WordMemoBar wordMemo={data.wordMemo} onUpdateMemo={updateStudyMemo} />
+      <VocabularyPanel
+        sentenceOptions={data.sentences}
+        vocabulary={data.vocabulary}
+        onAddVocabulary={addVocabularyEntry}
+        onDeleteVocabulary={deleteVocabularyEntry}
+        onUpdateVocabulary={updateVocabularyEntry}
+      />
 
       <section className="study-layout">
         <div className="study-main">
@@ -579,22 +722,159 @@ function FamilyTreeReference({ isOpen, onClose, onOpen }) {
   );
 }
 
-function WordMemoBar({ wordMemo, onUpdateMemo }) {
+function VocabularyPanel({
+  sentenceOptions,
+  vocabulary,
+  onAddVocabulary,
+  onDeleteVocabulary,
+  onUpdateVocabulary,
+}) {
+  const [vocabularyForm, setVocabularyForm] = useState(createEmptyVocabularyForm());
+
+  function updateVocabularyForm(field, value) {
+    setVocabularyForm((previousForm) => ({
+      ...previousForm,
+      [field]: value,
+    }));
+  }
+
+  function saveVocabularyEntry(event) {
+    event.preventDefault();
+
+    if (!vocabularyForm.word.trim()) return;
+
+    onAddVocabulary({
+      word: vocabularyForm.word.trim(),
+      meaning: vocabularyForm.meaning.trim(),
+      gameExample: vocabularyForm.gameExample.trim(),
+      myExample: vocabularyForm.myExample.trim(),
+    });
+    setVocabularyForm(createEmptyVocabularyForm());
+  }
+
   return (
     <section className="panel word-panel">
       <div className="word-panel-heading">
-        <h2>알아두어야 할 단어</h2>
-        <p>플레이 중 자주 들리는 단어를 위에 고정해둡니다.</p>
+        <div>
+          <h2>알아두어야 할 단어</h2>
+          <p>단어, 뜻, 예문을 게임별로 모아둡니다.</p>
+        </div>
+        <span className="small-badge">{vocabulary.length}개</span>
       </div>
 
-      <textarea
-        value={wordMemo}
-        onChange={(event) => onUpdateMemo("wordMemo", event.target.value)}
-        aria-label="알아두어야 할 단어"
-        placeholder={"remember 기억하다 / afraid 두려운 / explain 설명하다"}
-        rows="2"
-      />
+      <div className="word-panel-content">
+        <form className="word-form" onSubmit={saveVocabularyEntry}>
+          <label className="word-field">
+            <span>단어</span>
+            <input
+              value={vocabularyForm.word}
+              onChange={(event) => updateVocabularyForm("word", event.target.value)}
+              placeholder="remember"
+              required
+            />
+          </label>
+
+          <label className="word-field">
+            <span>뜻</span>
+            <input
+              value={vocabularyForm.meaning}
+              onChange={(event) => updateVocabularyForm("meaning", event.target.value)}
+              placeholder="기억하다"
+            />
+          </label>
+
+          <label className="word-field">
+            <span>게임 문장</span>
+            <input
+              list="edith-finch-sentence-options"
+              value={vocabularyForm.gameExample}
+              onChange={(event) => updateVocabularyForm("gameExample", event.target.value)}
+              placeholder="I remember."
+            />
+          </label>
+
+          <label className="word-field">
+            <span>내 문장</span>
+            <input
+              value={vocabularyForm.myExample}
+              onChange={(event) => updateVocabularyForm("myExample", event.target.value)}
+              placeholder="I remember my first day."
+            />
+          </label>
+
+          <button className="button primary word-add-button" type="submit">
+            추가
+          </button>
+        </form>
+
+        <datalist id="edith-finch-sentence-options">
+          {sentenceOptions.map((sentence) => (
+            <option key={sentence.id} value={sentence.original} />
+          ))}
+        </datalist>
+
+        <div className="word-entry-list" aria-label="단어장">
+          {vocabulary.length === 0 ? (
+            <p className="empty-message">아직 저장한 단어가 없습니다.</p>
+          ) : (
+            vocabulary.map((entry) => (
+              <VocabularyEntry
+                key={entry.id}
+                entry={entry}
+                onDeleteVocabulary={onDeleteVocabulary}
+                onUpdateVocabulary={onUpdateVocabulary}
+              />
+            ))
+          )}
+        </div>
+      </div>
     </section>
+  );
+}
+
+function VocabularyEntry({ entry, onDeleteVocabulary, onUpdateVocabulary }) {
+  return (
+    <article className="word-entry">
+      <label className="word-field">
+        <span>단어</span>
+        <input
+          value={entry.word}
+          onChange={(event) => onUpdateVocabulary(entry.id, "word", event.target.value)}
+          aria-label="단어"
+        />
+      </label>
+
+      <label className="word-field">
+        <span>뜻</span>
+        <input
+          value={entry.meaning}
+          onChange={(event) => onUpdateVocabulary(entry.id, "meaning", event.target.value)}
+          aria-label={`${entry.word} 뜻`}
+        />
+      </label>
+
+      <label className="word-field">
+        <span>게임 문장</span>
+        <input
+          value={entry.gameExample}
+          onChange={(event) => onUpdateVocabulary(entry.id, "gameExample", event.target.value)}
+          aria-label={`${entry.word} 게임 문장`}
+        />
+      </label>
+
+      <label className="word-field">
+        <span>내 문장</span>
+        <input
+          value={entry.myExample}
+          onChange={(event) => onUpdateVocabulary(entry.id, "myExample", event.target.value)}
+          aria-label={`${entry.word} 내 문장`}
+        />
+      </label>
+
+      <button className="button small danger word-delete-button" type="button" onClick={() => onDeleteVocabulary(entry.id)}>
+        삭제
+      </button>
+    </article>
   );
 }
 

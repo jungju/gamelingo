@@ -27,7 +27,7 @@ npm run build
 3. 상단의 `플레이 미션 보기`를 누르면 선택한 게임에 맞는 설명 팝업이 열립니다.
 4. `이번 플레이 미션`에서 이번 플레이 때 챙길 작은 목표를 체크합니다.
 5. 게임 중 짧은 영어 문장을 발견하면 `문장 추가`에 원문을 그대로 입력합니다.
-6. 상단의 `알아두어야 할 단어`에 자주 들리는 단어를 고정해둡니다.
+6. 상단의 `알아두어야 할 단어`에 자주 들리는 단어, 뜻, 예문을 저장합니다.
 7. 오른쪽 `스토리 메모`에 장면, 인물 관계, 다음에 기억할 내용을 적습니다.
 8. 필요하면 뜻과 내 문장을 가볍게 덧붙입니다.
 9. 저장된 카드에서 `원문 듣기`와 `내 문장 듣기`를 눌러 소리 내서 연습합니다.
@@ -46,7 +46,16 @@ npm run build
 
 ```js
 {
-  wordMemo: "remember 기억하다\nafraid 두려운",
+  wordMemo: "",
+  vocabulary: [
+    {
+      id: "vocab-remember",
+      word: "remember",
+      meaning: "기억하다",
+      gameExample: "I remember.",
+      myExample: "I remember my first day at work."
+    }
+  ],
   storyMemo: "오늘은 Finch 가족과 집에 대한 기억을 따라갔다.",
   missionChecks: {
     "save-3-sentences": true,
