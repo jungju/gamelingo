@@ -578,7 +578,7 @@ function EdithFinchPage({ data, setData, onGoHome }) {
   }
 
   return (
-    <div className="page-stack">
+    <div className="page-stack study-page">
       <header className="page-header">
         <div className="study-title">
           <img className="study-game-art" src={EDITH_FINCH_COVER} alt="" />
@@ -757,7 +757,6 @@ function VocabularyPanel({
       <div className="word-panel-heading">
         <div>
           <h2>알아두어야 할 단어</h2>
-          <p>단어, 뜻, 예문을 게임별로 모아둡니다.</p>
         </div>
         <span className="small-badge">{vocabulary.length}개</span>
       </div>
@@ -765,21 +764,21 @@ function VocabularyPanel({
       <div className="word-panel-content">
         <form className="word-form" onSubmit={saveVocabularyEntry}>
           <label className="word-field">
-            <span>단어</span>
             <input
               value={vocabularyForm.word}
               onChange={(event) => updateVocabularyForm("word", event.target.value)}
-              placeholder="remember"
+              aria-label="단어"
+              placeholder="단어"
               required
             />
           </label>
 
           <label className="word-field">
-            <span>뜻</span>
             <input
               value={vocabularyForm.meaning}
               onChange={(event) => updateVocabularyForm("meaning", event.target.value)}
-              placeholder="기억하다"
+              aria-label="뜻"
+              placeholder="뜻"
             />
           </label>
 
@@ -791,21 +790,21 @@ function VocabularyPanel({
             <summary>예문</summary>
             <div className="word-extra-grid">
               <label className="word-field">
-                <span>게임 문장</span>
                 <input
                   list="edith-finch-sentence-options"
                   value={vocabularyForm.gameExample}
                   onChange={(event) => updateVocabularyForm("gameExample", event.target.value)}
-                  placeholder="I remember."
+                  aria-label="게임 문장"
+                  placeholder="게임 문장"
                 />
               </label>
 
               <label className="word-field">
-                <span>내 문장</span>
                 <input
                   value={vocabularyForm.myExample}
                   onChange={(event) => updateVocabularyForm("myExample", event.target.value)}
-                  placeholder="I remember my first day."
+                  aria-label="내 문장"
+                  placeholder="내 문장"
                 />
               </label>
             </div>
@@ -841,20 +840,20 @@ function VocabularyEntry({ entry, onDeleteVocabulary, onUpdateVocabulary }) {
   return (
     <article className="word-entry">
       <label className="word-field">
-        <span>단어</span>
         <input
           value={entry.word}
           onChange={(event) => onUpdateVocabulary(entry.id, "word", event.target.value)}
           aria-label="단어"
+          placeholder="단어"
         />
       </label>
 
       <label className="word-field">
-        <span>뜻</span>
         <input
           value={entry.meaning}
           onChange={(event) => onUpdateVocabulary(entry.id, "meaning", event.target.value)}
           aria-label={`${entry.word} 뜻`}
+          placeholder="뜻"
         />
       </label>
 
@@ -866,20 +865,20 @@ function VocabularyEntry({ entry, onDeleteVocabulary, onUpdateVocabulary }) {
         <summary>예문</summary>
         <div className="word-extra-grid">
           <label className="word-field">
-            <span>게임 문장</span>
             <input
               value={entry.gameExample}
               onChange={(event) => onUpdateVocabulary(entry.id, "gameExample", event.target.value)}
               aria-label={`${entry.word} 게임 문장`}
+              placeholder="게임 문장"
             />
           </label>
 
           <label className="word-field">
-            <span>내 문장</span>
             <input
               value={entry.myExample}
               onChange={(event) => onUpdateVocabulary(entry.id, "myExample", event.target.value)}
               aria-label={`${entry.word} 내 문장`}
+              placeholder="내 문장"
             />
           </label>
         </div>
