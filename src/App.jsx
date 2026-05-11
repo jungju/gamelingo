@@ -440,6 +440,7 @@ function EdithFinchPage({ data, setData, onGoHome }) {
   const [editingSentenceId, setEditingSentenceId] = useState(null);
   const [sentenceForm, setSentenceForm] = useState(createEmptySentenceForm());
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [isFamilyTreeOpen, setIsFamilyTreeOpen] = useState(false);
   const [isStoryDrawerOpen, setIsStoryDrawerOpen] = useState(false);
   const [isVocabularyDrawerOpen, setIsVocabularyDrawerOpen] = useState(false);
@@ -449,6 +450,33 @@ function EdithFinchPage({ data, setData, onGoHome }) {
   const mySentenceCount = data.sentences.filter((sentence) => sentence.mySentence.trim()).length;
   const practicedSentenceCount = data.sentences.filter((sentence) => sentence.practiced).length;
   const progressScore = sentenceCount + vocabularyCount + mySentenceCount + practicedSentenceCount;
+  const studyStats = [
+    {
+      label: "저장 문장",
+      value: sentenceCount,
+      description: "게임에서 발견해 저장한 영어 원문 문장입니다.",
+    },
+    {
+      label: "단어",
+      value: vocabularyCount,
+      description: "알아두어야 할 단어 목록에 남긴 항목입니다.",
+    },
+    {
+      label: "내 문장",
+      value: mySentenceCount,
+      description: "게임 문장을 내 상황에 맞게 바꿔 쓴 문장입니다.",
+    },
+    {
+      label: "연습 완료",
+      value: practicedSentenceCount,
+      description: "뜻을 알고 소리 내서 연습했다고 체크한 문장입니다.",
+    },
+    {
+      label: "진행 점수",
+      value: `${progressScore}점`,
+      description: "저장 문장, 단어, 내 문장, 연습 완료를 합친 간단한 진행 지표입니다.",
+    },
+  ];
 
   const filteredSentences = useMemo(() => {
     const keyword = searchText.trim().toLowerCase();
@@ -589,27 +617,33 @@ function EdithFinchPage({ data, setData, onGoHome }) {
       <header className="page-header">
         <div className="study-title">
           <img className="study-game-art" src={EDITH_FINCH_COVER} alt="" />
-          <div>
+          <div className="study-title-copy">
             <p className="eyebrow">공부 중</p>
             <h1>What Remains of Edith Finch</h1>
           </div>
         </div>
         <div className="page-header-side">
-          <button className="button small secondary" type="button" onClick={onGoHome}>
-            홈
+          <button className="button icon-button secondary" type="button" onClick={onGoHome} aria-label="홈" title="홈">
+            ⌂
           </button>
-          <button className="button secondary guide-button" type="button" onClick={() => setIsGuideOpen(true)}>
-            플레이 미션 보기
+          <button
+            className="button icon-button secondary"
+            type="button"
+            onClick={() => setIsGuideOpen(true)}
+            aria-label="플레이 미션 보기"
+            title="플레이 미션 보기"
+          >
+            ☑
           </button>
-          <div className="summary-grid">
-            <SummaryCard label="저장 문장" value={sentenceCount} />
-            <SummaryCard label="단어" value={vocabularyCount} />
-            <SummaryCard label="내 문장" value={mySentenceCount} />
-            <SummaryCard label="연습 완료" value={practicedSentenceCount} />
-          </div>
-          <div className="score-pill">
-            진행 점수 <strong>{progressScore}</strong>점
-          </div>
+          <button
+            className="button icon-button secondary"
+            type="button"
+            onClick={() => setIsStatsOpen(true)}
+            aria-label="통계 보기"
+            title="통계 보기"
+          >
+            ▦
+          </button>
         </div>
       </header>
 
@@ -650,6 +684,7 @@ function EdithFinchPage({ data, setData, onGoHome }) {
       </section>
 
       <GuideModal guide={edithFinchGuide} isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
+      <StatsModal stats={studyStats} isOpen={isStatsOpen} onClose={() => setIsStatsOpen(false)} />
       <StoryMemoDrawer
         storyMemo={data.storyMemo}
         isOpen={isStoryDrawerOpen}
@@ -1076,11 +1111,51 @@ function SentenceCard({
   );
 }
 
-function SummaryCard({ label, value }) {
+function StatsModal({ stats, isOpen, onClose }) {
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    function closeWithEscape(event) {
+      if (event.key === "Escape") onClose();
+    }
+
+    window.addEventListener("keydown", closeWithEscape);
+    return () => window.removeEventListener("keydown", closeWithEscape);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
   return (
-    <div className="summary-card">
-      <p>{label}</p>
-      <strong>{value}</strong>
+    <div className="modal-backdrop" role="presentation" onClick={onClose}>
+      <section
+        className="modal-card stats-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="stats-title"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="modal-header">
+          <div>
+            <p className="eyebrow">공부 현황</p>
+            <h2 id="stats-title">통계</h2>
+          </div>
+          <button className="button small secondary" type="button" onClick={onClose}>
+            닫기
+          </button>
+        </div>
+
+        <div className="stats-list">
+          {stats.map((stat) => (
+            <article key={stat.label} className="stat-row">
+              <div>
+                <h3>{stat.label}</h3>
+                <p>{stat.description}</p>
+              </div>
+              <strong>{stat.value}</strong>
+            </article>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
