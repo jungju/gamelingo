@@ -319,6 +319,22 @@ button:disabled {
   max-height: min(680px, calc(100vh - 140px));
   overflow: auto;
   padding-right: 3px;
+  scrollbar-color: #57534e #18181b;
+  scrollbar-width: thin;
+}
+
+.word-entry-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.word-entry-list::-webkit-scrollbar-track {
+  background: #18181b;
+}
+
+.word-entry-list::-webkit-scrollbar-thumb {
+  border: 2px solid #18181b;
+  border-radius: 999px;
+  background: #57534e;
 }
 
 .word-entry {
