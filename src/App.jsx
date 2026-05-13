@@ -1772,6 +1772,8 @@ function SentenceCard({
   onSpeakEnglish,
   onTogglePracticed,
 }) {
+  const mySentence = sentence.mySentence.trim();
+
   return (
     <article className={`sentence-card ${sentence.practiced ? "done" : ""}`}>
       <div className="sentence-top">
@@ -1792,12 +1794,14 @@ function SentenceCard({
         </label>
       </div>
 
-      <div className="sentence-body">
-        <div>
-          <p className="card-label">내 문장</p>
-          <p>{sentence.mySentence || "나중에 만들어도 괜찮음"}</p>
+      {mySentence ? (
+        <div className="sentence-body">
+          <div>
+            <p className="card-label">내 문장</p>
+            <p>{mySentence}</p>
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <div className="card-actions">
         <button className="button small" type="button" onClick={() => onSpeakEnglish(sentence.original)}>
@@ -1806,8 +1810,8 @@ function SentenceCard({
         <button
           className="button small"
           type="button"
-          onClick={() => onSpeakEnglish(sentence.mySentence)}
-          disabled={!sentence.mySentence}
+          onClick={() => onSpeakEnglish(mySentence)}
+          disabled={!mySentence}
         >
           내 문장 듣기
         </button>
