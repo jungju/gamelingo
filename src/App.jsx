@@ -5,6 +5,7 @@ const OHMESH_BASE_URL = "https://ohmesh.okgo.click";
 const OHMESH_APP_SLUG = "gamelingo";
 const REGISTERED_REDIRECT_URL = "https://gamelingo.jjgo.io";
 const EDITH_FINCH_RECORD_TYPE = "edith-finch-study-state";
+const EDITH_FINCH_STORAGE_VERSION = 2;
 const EDITH_FINCH_ID = "edith-finch";
 const HOME_PATH = "/";
 const EDITH_FINCH_COVER = "/edith-finch-cover.png";
@@ -211,6 +212,10 @@ function normalizeEdithFinchData(data) {
     return defaultData;
   }
 
+  if (data.v === EDITH_FINCH_STORAGE_VERSION) {
+    return normalizeCompactEdithFinchData(data);
+  }
+
   const vocabulary = normalizeVocabularyEntries(data.vocabulary, data.wordMemo);
 
   return {
@@ -222,6 +227,115 @@ function normalizeEdithFinchData(data) {
       ? data.sentences.map(normalizeSentence).filter(Boolean)
       : defaultData.sentences,
   };
+}
+
+function normalizeCompactEdithFinchData(data) {
+  const defaultData = createDefaultEdithFinchData();
+
+  return {
+    wordMemo: typeof data.x === "string" ? data.x : defaultData.wordMemo,
+    vocabulary: typeof data.w === "string" ? parseVocabularyText(data.w) : defaultData.vocabulary,
+    storyMemo: typeof data.m === "string" ? data.m : defaultData.storyMemo,
+    missionChecks: normalizeCompactMissionChecks(data.c),
+    sentences: Array.isArray(data.s)
+      ? data.s.map(normalizeCompactSentence).filter(Boolean)
+      : defaultData.sentences,
+  };
+}
+
+function normalizeCompactMissionChecks(missionMask) {
+  const safeMissionMask = Number.isInteger(missionMask) ? missionMask : 0;
+
+  return missionItems.reduce(
+    (checks, item, index) => ({
+      ...checks,
+      [item.id]: Boolean(safeMissionMask & (1 << index)),
+    }),
+    createDefaultMissionChecks()
+  );
+}
+
+function normalizeCompactSentence(sentence) {
+  if (Array.isArray(sentence)) {
+    return normalizeSentence({
+      original: sentence[0],
+      meaning: sentence[1] || "",
+      mySentence: sentence[2] || "",
+      practiced: Boolean(sentence[3]),
+    });
+  }
+
+  return normalizeSentence(sentence);
+}
+
+function serializeEdithFinchData(data) {
+  const normalizedData = normalizeEdithFinchData(data);
+  const compactData = { v: EDITH_FINCH_STORAGE_VERSION };
+  const missionMask = serializeMissionChecks(normalizedData.missionChecks);
+  const vocabularyText = formatVocabularyText(normalizedData.vocabulary);
+  const defaultVocabularyText = formatVocabularyText(createDefaultVocabularyEntries());
+
+  if (normalizedData.wordMemo) {
+    compactData.x = normalizedData.wordMemo;
+  }
+
+  if (vocabularyText !== defaultVocabularyText) {
+    compactData.w = vocabularyText;
+  }
+
+  if (normalizedData.storyMemo) {
+    compactData.m = normalizedData.storyMemo;
+  }
+
+  if (missionMask) {
+    compactData.c = missionMask;
+  }
+
+  if (!areSentencesEquivalent(normalizedData.sentences, sampleSentences)) {
+    compactData.s = normalizedData.sentences.map(serializeSentence);
+  }
+
+  return compactData;
+}
+
+function serializeMissionChecks(missionChecks) {
+  return missionItems.reduce((missionMask, item, index) => {
+    return missionChecks?.[item.id] ? missionMask | (1 << index) : missionMask;
+  }, 0);
+}
+
+function serializeSentence(sentence) {
+  const compactSentence = [sentence.original];
+
+  if (sentence.meaning || sentence.mySentence || sentence.practiced) {
+    compactSentence.push(sentence.meaning);
+  }
+
+  if (sentence.mySentence || sentence.practiced) {
+    compactSentence.push(sentence.mySentence);
+  }
+
+  if (sentence.practiced) {
+    compactSentence.push(1);
+  }
+
+  return compactSentence;
+}
+
+function areSentencesEquivalent(sentences, referenceSentences) {
+  if (!Array.isArray(sentences) || sentences.length !== referenceSentences.length) {
+    return false;
+  }
+
+  return referenceSentences.every((referenceSentence, index) => {
+    const sentence = sentences[index];
+    return (
+      sentence?.original === referenceSentence.original &&
+      sentence?.meaning === referenceSentence.meaning &&
+      sentence?.mySentence === referenceSentence.mySentence &&
+      Boolean(sentence?.practiced) === Boolean(referenceSentence.practiced)
+    );
+  });
 }
 
 function isLegacySampleVocabulary(vocabulary) {
@@ -631,7 +745,10 @@ export default function App() {
           const createResponse = await ohmeshFetch(`/api/apps/${OHMESH_APP_SLUG}/records`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ type: EDITH_FINCH_RECORD_TYPE, data: defaultData }),
+            body: JSON.stringify({
+              type: EDITH_FINCH_RECORD_TYPE,
+              data: serializeEdithFinchData(defaultData),
+            }),
           });
 
           if (shouldIgnore || handleSessionProblem(createResponse)) return;
@@ -644,7 +761,26 @@ export default function App() {
         }
 
         const normalizedData = normalizeEdithFinchData(activeRecord?.data);
-        lastSavedDataJsonRef.current = JSON.stringify(normalizedData);
+        const compactData = serializeEdithFinchData(normalizedData);
+        const compactDataJson = JSON.stringify(compactData);
+
+        if (JSON.stringify(activeRecord?.data) !== compactDataJson) {
+          const compactResponse = await ohmeshFetch(`/api/apps/${OHMESH_APP_SLUG}/records/${activeRecord.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ data: compactData }),
+          });
+
+          if (shouldIgnore || handleSessionProblem(compactResponse)) return;
+
+          if (!compactResponse.ok) {
+            throw new Error(await getResponseErrorMessage(compactResponse, "노트를 압축 저장하지 못했습니다."));
+          }
+
+          activeRecord = await readResponseJson(compactResponse);
+        }
+
+        lastSavedDataJsonRef.current = compactDataJson;
 
         if (shouldIgnore) return;
 
@@ -675,7 +811,8 @@ export default function App() {
       return undefined;
     }
 
-    const nextDataJson = JSON.stringify(edithFinchData);
+    const compactData = serializeEdithFinchData(edithFinchData);
+    const nextDataJson = JSON.stringify(compactData);
 
     if (nextDataJson === lastSavedDataJsonRef.current) {
       return undefined;
@@ -689,7 +826,7 @@ export default function App() {
         const response = await ohmeshFetch(`/api/apps/${OHMESH_APP_SLUG}/records/${storageRecord.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ data: edithFinchData }),
+          body: JSON.stringify({ data: compactData }),
           signal: abortController.signal,
         });
 

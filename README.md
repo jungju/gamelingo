@@ -45,40 +45,19 @@ npm run build
 - 저장 record type: `edith-finch-study-state`
 - record data: `What Remains of Edith Finch`의 미션 체크, 단어장, 스토리 메모, 문장 노트
 
-record data에는 대략 아래 정보가 저장됩니다.
+record data는 저장 크기를 줄이기 위해 압축 포맷으로 저장합니다. 기본 단어장, 기본 샘플 문장, 체크되지 않은 미션은 저장하지 않습니다.
 
 ```js
 {
-  wordMemo: "",
-  vocabulary: [
-    {
-      id: "vocab-remember",
-      word: "remember",
-      meaning: "기억하다",
-      gameExample: "I remember.",
-      myExample: "I remember my first day at work."
-    }
-  ],
-  storyMemo: "오늘은 Finch 가족과 집에 대한 기억을 따라갔다.",
-  missionChecks: {
-    "save-3-sentences": true,
-    "save-5-words": true,
-    "leave-story-note": true,
-    "make-2-my-sentences": false,
-    "speak-1-original": false,
-    "practice-1-sentence": true
-  },
-  sentences: [
-    {
-      id: "sample-1",
-      original: "I remember.",
-      meaning: "나는 기억한다.",
-      mySentence: "I remember my first day at work.",
-      practiced: false
-    }
-  ]
+  v: 2,
+  w: "alive: 살아 있는\nattic: 다락방",
+  m: "오늘은 Finch 가족과 집에 대한 기억을 따라갔다.",
+  c: 39,
+  s: [["I remember.", "나는 기억한다.", "I remember my first day at work.", 1]]
 }
 ```
+
+압축 키는 `v` 버전, `w` 단어 key:value 리스트, `m` 스토리 메모, `c` 미션 체크 bitmask, `s` 문장 배열입니다. 화면에서는 이 데이터를 다시 기존 UI 구조로 복원해서 사용합니다.
 
 데이터 구조가 깨진 경우에는 앱이 멈추지 않도록 기본 데이터로 되돌리는 처리를 넣었습니다.
 
