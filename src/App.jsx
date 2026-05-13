@@ -1777,52 +1777,111 @@ function SentenceCard({
   return (
     <article className={`sentence-card ${sentence.practiced ? "done" : ""}`}>
       <div className="sentence-top">
-        <div>
-          <h3>{sentence.original}</h3>
-          {sentence.meaning ? <p className="meaning">{sentence.meaning}</p> : null}
+        <div className="sentence-copy">
+          <button
+            className="sentence-icon-action"
+            type="button"
+            onClick={() => onSpeakEnglish(sentence.original)}
+            aria-label="원문 듣기"
+            title="원문 듣기"
+          >
+            <SpeakerIcon />
+          </button>
+          <div className="sentence-text">
+            <h3>{sentence.original}</h3>
+            {sentence.meaning ? <p className="meaning">{sentence.meaning}</p> : null}
+          </div>
         </div>
 
-        <label className="practice-check">
-          <input
-            className="toggle-input"
-            type="checkbox"
-            checked={sentence.practiced}
-            onChange={() => onTogglePracticed(sentence.id)}
-          />
-          <span className="toggle-track" aria-hidden="true" />
-          <span className="toggle-copy">연습 완료</span>
-        </label>
+        <div className="sentence-card-tools">
+          <label className="practice-check">
+            <input
+              className="toggle-input"
+              type="checkbox"
+              checked={sentence.practiced}
+              onChange={() => onTogglePracticed(sentence.id)}
+            />
+            <span className="toggle-track" aria-hidden="true" />
+            <span className="toggle-copy">연습 완료</span>
+          </label>
+          <button
+            className="sentence-icon-action"
+            type="button"
+            onClick={() => onEditSentence(sentence)}
+            aria-label="문장 수정"
+            title="수정"
+          >
+            <EditIcon />
+          </button>
+          <button
+            className="sentence-icon-action danger"
+            type="button"
+            onClick={() => onDeleteSentence(sentence.id)}
+            aria-label="문장 삭제"
+            title="삭제"
+          >
+            <TrashIcon />
+          </button>
+        </div>
       </div>
 
       {mySentence ? (
         <div className="sentence-body">
-          <div>
-            <p className="card-label">내 문장</p>
-            <p>{mySentence}</p>
+          <div className="sentence-copy">
+            <button
+              className="sentence-icon-action"
+              type="button"
+              onClick={() => onSpeakEnglish(mySentence)}
+              aria-label="내 문장 듣기"
+              title="내 문장 듣기"
+            >
+              <SpeakerIcon />
+            </button>
+            <div className="sentence-text">
+              <p className="card-label">내 문장</p>
+              <p>{mySentence}</p>
+            </div>
           </div>
         </div>
       ) : null}
-
-      <div className="card-actions">
-        <button className="button small" type="button" onClick={() => onSpeakEnglish(sentence.original)}>
-          원문 듣기
-        </button>
-        <button
-          className="button small"
-          type="button"
-          onClick={() => onSpeakEnglish(mySentence)}
-          disabled={!mySentence}
-        >
-          내 문장 듣기
-        </button>
-        <button className="button small secondary" type="button" onClick={() => onEditSentence(sentence)}>
-          수정
-        </button>
-        <button className="button small danger" type="button" onClick={() => onDeleteSentence(sentence.id)}>
-          삭제
-        </button>
-      </div>
     </article>
+  );
+}
+
+function SpeakerIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 9v6h4l5 4V5L8 9H4Z" fill="currentColor" />
+      <path
+        d="M16 9.2c.8.8 1.2 1.7 1.2 2.8s-.4 2-1.2 2.8M18.6 6.8A7.2 7.2 0 0 1 21 12a7.2 7.2 0 0 1-2.4 5.2"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
+
+function EditIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="m5 16.8-.7 3 3-.7L18.8 8.6 16.5 6.3 5 16.8ZM15.2 5l2.3-2.1 2.3 2.3-2.2 2.1L15.2 5Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M8 4h8l1 2h4v2H3V6h4l1-2Zm1 6h2v8H9v-8Zm4 0h2v8h-2v-8Zm-6 0h10l-.7 10H7.7L7 10Z"
+        fill="currentColor"
+      />
+    </svg>
   );
 }
 
