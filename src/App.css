@@ -737,21 +737,6 @@ button:disabled {
   justify-content: flex-end;
 }
 
-.search-input {
-  flex: 1 1 260px;
-  min-width: 220px;
-  border: 1px solid #3f3f46;
-  border-radius: 9px;
-  background: #0f0f10;
-  color: #fafaf9;
-  padding: 8px 10px;
-  outline: none;
-}
-
-.search-input:focus {
-  border-color: #d6d3d1;
-}
-
 .sentence-list {
   display: grid;
   gap: 10px;
@@ -1131,10 +1116,6 @@ button:disabled {
 
   .list-tools {
     justify-content: stretch;
-  }
-
-  .search-input {
-    min-width: 0;
   }
 
   .button-row {

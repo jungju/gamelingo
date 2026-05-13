@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
 
 const OHMESH_BASE_URL = "https://ohmesh.okgo.click";
@@ -1075,7 +1075,6 @@ function SyncStatusBadge({ syncState }) {
 }
 
 function EdithFinchPage({ data, setData, syncState, user, onGoHome, onLogout }) {
-  const [searchText, setSearchText] = useState("");
   const [editingSentenceId, setEditingSentenceId] = useState(null);
   const [sentenceForm, setSentenceForm] = useState(createEmptySentenceForm());
   const [isGuideOpen, setIsGuideOpen] = useState(false);
@@ -1116,19 +1115,6 @@ function EdithFinchPage({ data, setData, syncState, user, onGoHome, onLogout }) 
       description: "저장 문장, 단어, 내 문장, 연습 완료를 합친 간단한 진행 지표입니다.",
     },
   ];
-
-  const filteredSentences = useMemo(() => {
-    const keyword = searchText.trim().toLowerCase();
-
-    return data.sentences.filter((sentence) => {
-      return (
-        !keyword ||
-        sentence.original.toLowerCase().includes(keyword) ||
-        sentence.meaning.toLowerCase().includes(keyword) ||
-        sentence.mySentence.toLowerCase().includes(keyword)
-      );
-    });
-  }, [data.sentences, searchText]);
 
   function toggleMissionCheck(missionId) {
     setData((previousData) => ({
@@ -1246,7 +1232,6 @@ function EdithFinchPage({ data, setData, syncState, user, onGoHome, onLogout }) 
 
     const defaultData = createDefaultEdithFinchData();
     setData(defaultData);
-    setSearchText("");
     setEditingSentenceId(null);
     setSentenceForm(createEmptySentenceForm());
   }
@@ -1329,11 +1314,9 @@ function EdithFinchPage({ data, setData, syncState, user, onGoHome, onLogout }) 
 
             <div className="right-column">
               <SentenceList
-                filteredSentences={filteredSentences}
-                searchText={searchText}
+                sentences={data.sentences}
                 onDeleteSentence={deleteSentence}
                 onEditSentence={editSentence}
-                onSearchTextChange={setSearchText}
                 onSpeakEnglish={speakEnglish}
                 onTogglePracticed={toggleSentencePracticed}
                 onResetData={resetEdithFinchData}
@@ -1663,11 +1646,9 @@ function SentenceForm({ form, editingSentenceId, onCancelEdit, onSaveSentence, o
 }
 
 function SentenceList({
-  filteredSentences,
-  searchText,
+  sentences,
   onDeleteSentence,
   onEditSentence,
-  onSearchTextChange,
   onSpeakEnglish,
   onTogglePracticed,
   onResetData,
@@ -1679,13 +1660,6 @@ function SentenceList({
           <h2>영어 문장 노트</h2>
         </div>
         <div className="list-tools">
-          <input
-            className="search-input"
-            value={searchText}
-            onChange={(event) => onSearchTextChange(event.target.value)}
-            aria-label="문장 검색"
-            placeholder="원문, 뜻, 내 문장"
-          />
           <button className="button small danger" type="button" onClick={onResetData}>
             초기화
           </button>
@@ -1693,10 +1667,10 @@ function SentenceList({
       </div>
 
       <div className="sentence-list">
-        {filteredSentences.length === 0 ? (
-          <p className="empty-message">조건에 맞는 문장이 없습니다.</p>
+        {sentences.length === 0 ? (
+          <p className="empty-message">아직 저장한 문장이 없습니다.</p>
         ) : (
-          filteredSentences.map((sentence) => (
+          sentences.map((sentence) => (
             <SentenceCard
               key={sentence.id}
               sentence={sentence}
