@@ -1295,7 +1295,7 @@ function EdithFinchPage({ data, setData, syncState, user, onGoHome, onLogout }) 
           >
             ✎
           </button>
-          <button className="button small secondary" type="button" onClick={onLogout}>
+          <button className="button header-logout-button secondary" type="button" onClick={onLogout}>
             로그아웃
           </button>
         </div>
@@ -1592,11 +1592,13 @@ function MissionPanel({ missionChecks, onToggleMission }) {
         {missionItems.map((item) => (
           <label key={item.id} className="mission-check">
             <input
+              className="toggle-input"
               type="checkbox"
               checked={Boolean(missionChecks?.[item.id])}
               onChange={() => onToggleMission(item.id)}
             />
-            <span>{item.label}</span>
+            <span className="toggle-track" aria-hidden="true" />
+            <span className="toggle-copy">{item.label}</span>
           </label>
         ))}
       </div>
@@ -1727,11 +1729,13 @@ function SentenceCard({
 
         <label className="practice-check">
           <input
+            className="toggle-input"
             type="checkbox"
             checked={sentence.practiced}
             onChange={() => onTogglePracticed(sentence.id)}
           />
-          <span>연습 완료</span>
+          <span className="toggle-track" aria-hidden="true" />
+          <span className="toggle-copy">연습 완료</span>
         </label>
       </div>
 

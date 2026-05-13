@@ -570,8 +570,10 @@ button:disabled {
 .practice-check {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
   color: #d6d3d1;
+  cursor: pointer;
+  user-select: none;
 }
 
 .mission-check {
@@ -580,6 +582,70 @@ button:disabled {
   background: #101010;
   padding: 8px 9px;
   font-size: 13px;
+}
+
+.toggle-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toggle-track {
+  position: relative;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 24px;
+  border: 1px solid #3f3f46;
+  border-radius: 999px;
+  background: #27272a;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.28);
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.toggle-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #a8a29e;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.32);
+  transition:
+    background 140ms ease,
+    transform 140ms ease;
+}
+
+.mission-check:hover .toggle-track,
+.practice-check:hover .toggle-track {
+  border-color: #d6d3d1;
+}
+
+.toggle-input:checked + .toggle-track {
+  border-color: #e7e5e4;
+  background: #e7e5e4;
+}
+
+.toggle-input:checked + .toggle-track::after {
+  background: #151515;
+  transform: translateX(18px);
+}
+
+.toggle-input:focus-visible + .toggle-track {
+  outline: 2px solid #d6d3d1;
+  outline-offset: 2px;
+}
+
+.toggle-copy {
+  min-width: 0;
+  line-height: 1.35;
 }
 
 .sentence-form {
@@ -639,6 +705,17 @@ button:disabled {
 .button.small {
   padding: 6px 9px;
   font-size: 13px;
+}
+
+.header-logout-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  padding: 0 12px;
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .icon-button {
