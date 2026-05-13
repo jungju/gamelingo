@@ -1318,16 +1318,6 @@ function EdithFinchPage({
     window.speechSynthesis.speak(utterance);
   }
 
-  function resetEdithFinchData() {
-    const confirmed = window.confirm("What Remains of Edith Finch 플레이 노트를 초기화할까요?");
-    if (!confirmed) return;
-
-    const defaultData = createDefaultEdithFinchData();
-    setData(defaultData);
-    setEditingSentenceId(null);
-    setSentenceForm(createEmptySentenceForm());
-  }
-
   return (
     <div className="page-stack study-page">
       <header className="page-header">
@@ -1415,7 +1405,6 @@ function EdithFinchPage({
                 onEditSentence={editSentence}
                 onSpeakEnglish={speakEnglish}
                 onTogglePracticed={toggleSentencePracticed}
-                onResetData={resetEdithFinchData}
               />
             </div>
           </div>
@@ -1747,18 +1736,12 @@ function SentenceList({
   onEditSentence,
   onSpeakEnglish,
   onTogglePracticed,
-  onResetData,
 }) {
   return (
     <section className="panel">
       <div className="panel-heading">
         <div>
           <h2>영어 문장 노트</h2>
-        </div>
-        <div className="list-tools">
-          <button className="button small danger" type="button" onClick={onResetData}>
-            초기화
-          </button>
         </div>
       </div>
 
