@@ -171,6 +171,12 @@ button:disabled {
   white-space: nowrap;
 }
 
+.sync-badge.local {
+  border-color: #57534e;
+  background: rgba(68, 64, 60, 0.4);
+  color: #e7e5e4;
+}
+
 .sync-badge.loading,
 .sync-badge.saving {
   border-color: #854d0e;

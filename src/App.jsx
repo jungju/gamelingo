@@ -6,6 +6,8 @@ const OHMESH_APP_SLUG = "gamelingo";
 const REGISTERED_REDIRECT_URL = "https://gamelingo.jjgo.io";
 const EDITH_FINCH_RECORD_TYPE = "edith-finch-study-state";
 const EDITH_FINCH_STORAGE_VERSION = 2;
+const GUEST_EDITH_FINCH_KEY = "gamelingo:v2:edithFinch:guest";
+const PENDING_GUEST_SAVE_KEY = "gamelingo:v2:pendingGuestSave";
 const EDITH_FINCH_ID = "edith-finch";
 const HOME_PATH = "/";
 const EDITH_FINCH_COVER = "/edith-finch-cover.png";
@@ -298,6 +300,10 @@ function serializeEdithFinchData(data) {
   return compactData;
 }
 
+function hasCustomEdithFinchData(data) {
+  return JSON.stringify(serializeEdithFinchData(data)) !== JSON.stringify({ v: EDITH_FINCH_STORAGE_VERSION });
+}
+
 function serializeMissionChecks(missionChecks) {
   return missionItems.reduce((missionMask, item, index) => {
     return missionChecks?.[item.id] ? missionMask | (1 << index) : missionMask;
@@ -491,6 +497,57 @@ function readRoutePath() {
   return normalizeRoutePath(window.location.pathname);
 }
 
+function loadGuestEdithFinchData() {
+  if (typeof window === "undefined") return createDefaultEdithFinchData();
+
+  try {
+    const savedData = window.localStorage.getItem(GUEST_EDITH_FINCH_KEY);
+    return savedData ? normalizeEdithFinchData(JSON.parse(savedData)) : createDefaultEdithFinchData();
+  } catch {
+    return createDefaultEdithFinchData();
+  }
+}
+
+function saveGuestEdithFinchData(data) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(GUEST_EDITH_FINCH_KEY, JSON.stringify(serializeEdithFinchData(data)));
+  } catch {
+    // 게스트 저장 실패는 앱 사용을 막지 않는다.
+  }
+}
+
+function markPendingGuestSave() {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(PENDING_GUEST_SAVE_KEY, "1");
+  } catch {
+    // 로그인은 계속 진행한다.
+  }
+}
+
+function hasPendingGuestSave() {
+  if (typeof window === "undefined") return false;
+
+  try {
+    return window.localStorage.getItem(PENDING_GUEST_SAVE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function clearPendingGuestSave() {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.removeItem(PENDING_GUEST_SAVE_KEY);
+  } catch {
+    // 제거 실패는 다음 저장 때 다시 정리된다.
+  }
+}
+
 function getCurrentAppUrl() {
   if (typeof window === "undefined") return REGISTERED_REDIRECT_URL;
 
@@ -554,6 +611,7 @@ function getUserDisplayName(user) {
 }
 
 function getSyncStatusLabel(syncState) {
+  if (syncState.status === "local") return "브라우저 저장";
   if (syncState.status === "loading") return "불러오는 중";
   if (syncState.status === "saving") return "저장 중";
   if (syncState.status === "saved") return "저장됨";
@@ -570,9 +628,12 @@ export default function App() {
     session: null,
     message: "로그인 상태를 확인하는 중입니다.",
   });
-  const [edithFinchData, setEdithFinchData] = useState(createDefaultEdithFinchData);
+  const [edithFinchData, setEdithFinchData] = useState(loadGuestEdithFinchData);
   const [storageRecord, setStorageRecord] = useState(null);
-  const [syncState, setSyncState] = useState({ status: "idle", message: "" });
+  const [syncState, setSyncState] = useState({
+    status: "local",
+    message: "로그인 전에는 이 브라우저에만 저장됩니다.",
+  });
   const [isRemoteDataReady, setIsRemoteDataReady] = useState(false);
   const [storageReloadKey, setStorageReloadKey] = useState(0);
   const lastSavedDataJsonRef = useRef("");
@@ -580,8 +641,6 @@ export default function App() {
   const clearRemoteData = useCallback(() => {
     setStorageRecord(null);
     setIsRemoteDataReady(false);
-    setSyncState({ status: "idle", message: "" });
-    setEdithFinchData(createDefaultEdithFinchData());
     lastSavedDataJsonRef.current = "";
   }, []);
 
@@ -595,6 +654,10 @@ export default function App() {
           app: null,
           session: null,
           message: "로그인이 필요합니다. 다시 로그인해주세요.",
+        });
+        setSyncState({
+          status: "local",
+          message: "로그인 전에는 이 브라우저에만 저장됩니다.",
         });
         return true;
       }
@@ -629,6 +692,10 @@ export default function App() {
           session: null,
           message: "로그인하면 문장 노트를 안전하게 저장할 수 있습니다.",
         });
+        setSyncState({
+          status: "local",
+          message: "로그인 전에는 이 브라우저에만 저장됩니다.",
+        });
         return;
       }
 
@@ -659,6 +726,10 @@ export default function App() {
       });
     } catch (error) {
       clearRemoteData();
+      setSyncState({
+        status: "local",
+        message: "ohmesh 확인에 실패해 이 브라우저에만 저장됩니다.",
+      });
       setAuthState({
         status: "error",
         user: null,
@@ -701,6 +772,12 @@ export default function App() {
       shouldIgnore = true;
     };
   }, [loadAuthState]);
+
+  useEffect(() => {
+    if (authState.status !== "signed-out" && authState.status !== "error") return;
+
+    saveGuestEdithFinchData(edithFinchData);
+  }, [authState.status, edithFinchData]);
 
   useEffect(() => {
     if (authState.status !== "signed-in") return undefined;
@@ -760,7 +837,11 @@ export default function App() {
           activeRecord = await readResponseJson(createResponse);
         }
 
-        const normalizedData = normalizeEdithFinchData(activeRecord?.data);
+        const pendingGuestData = hasPendingGuestSave() ? loadGuestEdithFinchData() : null;
+        const shouldUploadGuestData = Boolean(pendingGuestData && hasCustomEdithFinchData(pendingGuestData));
+        const normalizedData = shouldUploadGuestData
+          ? pendingGuestData
+          : normalizeEdithFinchData(activeRecord?.data);
         const compactData = serializeEdithFinchData(normalizedData);
         const compactDataJson = JSON.stringify(compactData);
 
@@ -780,14 +861,22 @@ export default function App() {
           activeRecord = await readResponseJson(compactResponse);
         }
 
+        if (pendingGuestData) {
+          clearPendingGuestSave();
+        }
+
         lastSavedDataJsonRef.current = compactDataJson;
 
         if (shouldIgnore) return;
 
         setStorageRecord(activeRecord);
         setEdithFinchData(normalizedData);
+        saveGuestEdithFinchData(normalizedData);
         setIsRemoteDataReady(true);
-        setSyncState({ status: "saved", message: "ohmesh에 저장되어 있습니다." });
+        setSyncState({
+          status: "saved",
+          message: shouldUploadGuestData ? "브라우저 노트를 ohmesh에 저장했습니다." : "ohmesh에 저장되어 있습니다.",
+        });
       } catch (error) {
         if (shouldIgnore) return;
 
@@ -839,6 +928,7 @@ export default function App() {
         const updatedRecord = await readResponseJson(response);
         lastSavedDataJsonRef.current = nextDataJson;
         setStorageRecord(updatedRecord);
+        saveGuestEdithFinchData(edithFinchData);
         setSyncState({ status: "saved", message: "ohmesh에 저장되어 있습니다." });
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return;
@@ -868,6 +958,12 @@ export default function App() {
     window.location.assign(createOhmeshRedirectUrl("/login"));
   }
 
+  function saveToOhmesh() {
+    saveGuestEdithFinchData(edithFinchData);
+    markPendingGuestSave();
+    login();
+  }
+
   function logout() {
     window.location.assign(createOhmeshRedirectUrl("/logout"));
   }
@@ -880,19 +976,6 @@ export default function App() {
     return (
       <div className="app-shell home-shell">
         <AuthStatePage title="로그인 확인 중" description={authState.message} />
-      </div>
-    );
-  }
-
-  if (authState.status === "signed-out") {
-    return (
-      <div className="app-shell home-shell">
-        <AuthStatePage
-          title="Gamelingo 로그인"
-          description={authState.message}
-          primaryAction="ohmesh로 로그인"
-          onPrimaryAction={login}
-        />
       </div>
     );
   }
@@ -912,22 +995,7 @@ export default function App() {
     );
   }
 
-  if (authState.status === "error") {
-    return (
-      <div className="app-shell home-shell">
-        <AuthStatePage
-          title="로그인 상태를 확인하지 못했습니다"
-          description={authState.message}
-          primaryAction="다시 확인"
-          onPrimaryAction={checkAuth}
-          secondaryAction="ohmesh로 로그인"
-          onSecondaryAction={login}
-        />
-      </div>
-    );
-  }
-
-  if (!isRemoteDataReady) {
+  if (authState.status === "signed-in" && !isRemoteDataReady) {
     return (
       <div className="app-shell home-shell">
         <AuthStatePage
@@ -942,6 +1010,7 @@ export default function App() {
     );
   }
 
+  const isGuestMode = authState.status === "signed-out" || authState.status === "error";
   return (
     <div className={`app-shell ${selectedGameInfo ? "study-shell" : "home-shell"}`}>
       {selectedGameInfo ? (
@@ -952,8 +1021,10 @@ export default function App() {
               setData={setEdithFinchData}
               syncState={syncState}
               user={authState.user}
+              isGuestMode={isGuestMode}
               onGoHome={() => navigateTo(HOME_PATH)}
               onLogout={logout}
+              onSaveToOhmesh={saveToOhmesh}
             />
           ) : (
             <ComingSoonPage game={selectedGameInfo} onGoHome={() => navigateTo(HOME_PATH)} />
@@ -964,7 +1035,9 @@ export default function App() {
           games={games}
           syncState={syncState}
           user={authState.user}
+          isGuestMode={isGuestMode}
           onLogout={logout}
+          onSaveToOhmesh={saveToOhmesh}
           onSelectGame={(game) => navigateTo(game.path)}
         />
       )}
@@ -1013,14 +1086,20 @@ function AuthStatePage({
   );
 }
 
-function HomePage({ games, syncState, user, onLogout, onSelectGame }) {
+function HomePage({ games, syncState, user, isGuestMode, onLogout, onSaveToOhmesh, onSelectGame }) {
   return (
     <main className="home-page">
       <header className="home-header">
         <div className="brand home-brand">
           <p className="brand-label">Gamelingo</p>
           <p className="brand-text">게임별 영어 문장 노트</p>
-          <AccountSummary syncState={syncState} user={user} onLogout={onLogout} />
+          <AccountSummary
+            syncState={syncState}
+            user={user}
+            isGuestMode={isGuestMode}
+            onLogout={onLogout}
+            onSaveToOhmesh={onSaveToOhmesh}
+          />
         </div>
         <div>
           <p className="eyebrow">게임 선택</p>
@@ -1052,15 +1131,19 @@ function HomePage({ games, syncState, user, onLogout, onSelectGame }) {
   );
 }
 
-function AccountSummary({ syncState, user, onLogout }) {
+function AccountSummary({ syncState, user, isGuestMode, onLogout, onSaveToOhmesh }) {
   return (
     <div className="account-summary">
       <div>
-        <p className="account-name">{getUserDisplayName(user)}</p>
+        <p className="account-name">{isGuestMode ? "게스트 모드" : getUserDisplayName(user)}</p>
         <SyncStatusBadge syncState={syncState} />
       </div>
-      <button className="button small secondary" type="button" onClick={onLogout}>
-        로그아웃
+      <button
+        className={`button small ${isGuestMode ? "primary" : "secondary"}`}
+        type="button"
+        onClick={isGuestMode ? onSaveToOhmesh : onLogout}
+      >
+        {isGuestMode ? "저장하기" : "로그아웃"}
       </button>
     </div>
   );
@@ -1074,7 +1157,16 @@ function SyncStatusBadge({ syncState }) {
   );
 }
 
-function EdithFinchPage({ data, setData, syncState, user, onGoHome, onLogout }) {
+function EdithFinchPage({
+  data,
+  setData,
+  syncState,
+  user,
+  isGuestMode,
+  onGoHome,
+  onLogout,
+  onSaveToOhmesh,
+}) {
   const [editingSentenceId, setEditingSentenceId] = useState(null);
   const [sentenceForm, setSentenceForm] = useState(createEmptySentenceForm());
   const [isGuideOpen, setIsGuideOpen] = useState(false);
@@ -1242,7 +1334,7 @@ function EdithFinchPage({ data, setData, syncState, user, onGoHome, onLogout }) 
         <div className="study-title">
           <img className="study-game-art" src={EDITH_FINCH_COVER} alt="" />
           <div className="study-title-copy">
-            <p className="eyebrow">공부 중 · {getUserDisplayName(user)}</p>
+            <p className="eyebrow">공부 중 · {isGuestMode ? "게스트 모드" : getUserDisplayName(user)}</p>
             <h1>What Remains of Edith Finch</h1>
           </div>
         </div>
@@ -1280,8 +1372,12 @@ function EdithFinchPage({ data, setData, syncState, user, onGoHome, onLogout }) 
           >
             ✎
           </button>
-          <button className="button header-logout-button secondary" type="button" onClick={onLogout}>
-            로그아웃
+          <button
+            className={`button header-logout-button ${isGuestMode ? "primary" : "secondary"}`}
+            type="button"
+            onClick={isGuestMode ? onSaveToOhmesh : onLogout}
+          >
+            {isGuestMode ? "저장하기" : "로그아웃"}
           </button>
         </div>
       </header>
