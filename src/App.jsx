@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
 
-const OHMESH_BASE_URL = "https://ohmesh.okgo.click";
+const OHMESH_BASE_URL = "https://ohmesh.jjgo.io";
 const OHMESH_APP_SLUG = "gamelingo";
 const REGISTERED_REDIRECT_URL = "https://gamelingo.jjgo.io";
 const EDITH_FINCH_RECORD_TYPE = "edith-finch-study-state";
