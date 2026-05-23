@@ -68,6 +68,8 @@ panel, and a bottom character rail.
   in line order.
 - Existing vocabulary ids are preserved for matching English words. Deleting a
   line deletes that vocabulary entry.
+- The board vocabulary panel is a narrow, compact one-column list.
+- Sentence cards and the sentence note modal do not show vocabulary tags.
 - The bottom character rail supports character add, edit, and delete. The add
   button text is `등장인물 추가`.
 - Guest mode shows `로그인`, not browser-save wording.

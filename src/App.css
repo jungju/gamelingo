@@ -54,6 +54,8 @@ img {
 }
 
 .study-template {
+  --word-panel-width: 248px;
+
   min-height: 100vh;
   overflow: hidden;
   background: #0c0a09;
@@ -175,8 +177,6 @@ img {
 }
 
 .study-template .board {
-  --word-panel-width: 360px;
-
   position: relative;
   height: calc(100vh - 76px);
   overflow: hidden;
@@ -339,41 +339,20 @@ img {
   -webkit-line-clamp: 2;
 }
 
-.study-template .note-words {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 10px;
-  max-height: 23px;
-  overflow: hidden;
-}
-
-.study-template .tag {
-  max-width: 100%;
-  overflow: hidden;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.1);
-  padding: 4px 8px;
-  font-size: 10px;
-  font-weight: 900;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .study-template .word-panel {
   position: absolute;
-  top: 40px;
-  right: 32px;
+  top: 36px;
+  right: 24px;
   bottom: 20px;
   z-index: 60;
   width: var(--word-panel-width);
   display: flex;
   flex-direction: column;
   border: 1px solid #44403c;
-  border-radius: 24px;
+  border-radius: 18px;
   background: rgba(12, 10, 9, 0.96);
   color: #f5f5f4;
-  padding: 16px;
+  padding: 10px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(10px);
 }
@@ -382,21 +361,21 @@ img {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 6px;
+  margin-bottom: 8px;
 }
 
 .study-template .word-title-wrap {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .study-template .word-title {
   margin: 0;
   color: #f5f5f4;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 900;
 }
 
@@ -404,8 +383,8 @@ img {
   border-radius: 999px;
   background: #292524;
   color: #a8a29e;
-  padding: 4px 8px;
-  font-size: 11px;
+  padding: 3px 7px;
+  font-size: 10px;
   font-weight: 900;
 }
 
@@ -414,28 +393,28 @@ img {
   flex: 1;
   display: grid;
   align-content: start;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  grid-template-columns: 1fr;
+  gap: 4px;
   overflow-y: auto;
-  padding-right: 4px;
+  padding-right: 2px;
 }
 
 .study-template .empty-word-list {
   grid-column: 1 / -1;
   margin: 0;
   border: 1px dashed #292524;
-  border-radius: 16px;
+  border-radius: 12px;
   color: #78716c;
-  padding: 16px;
-  font-size: 14px;
+  padding: 12px;
+  font-size: 12px;
 }
 
 .study-template .word-item {
   border: 1px solid #292524;
-  border-radius: 12px;
+  border-radius: 9px;
   background: #1c1917;
   color: inherit;
-  padding: 7px 8px;
+  padding: 5px 6px;
   text-align: left;
 }
 
@@ -445,12 +424,14 @@ img {
 
 .study-template .word-row {
   display: flex;
+  min-width: 0;
   align-items: baseline;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
 }
 
 .study-template .word-en {
+  min-width: 0;
   overflow: hidden;
   color: #f5f5f4;
   font-size: 12px;
@@ -460,9 +441,12 @@ img {
 }
 
 .study-template .word-ko {
-  flex-shrink: 0;
+  min-width: 0;
+  overflow: hidden;
   color: #a8a29e;
   font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .study-template .character-strip {
@@ -477,7 +461,7 @@ img {
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  padding-right: 380px;
+  padding-right: calc(var(--word-panel-width) + 28px);
   padding-bottom: 4px;
 }
 
@@ -560,7 +544,7 @@ img {
 .study-template .overlay {
   position: fixed;
   top: 0;
-  right: 400px;
+  right: calc(var(--word-panel-width) + 40px);
   bottom: 0;
   left: 0;
   z-index: 40;
@@ -572,6 +556,10 @@ img {
 .study-template .overlay.center {
   display: grid;
   place-items: center;
+}
+
+.study-template .character-modal-shell {
+  right: calc(var(--word-panel-width) + 40px);
 }
 
 .study-template .modal {
@@ -704,15 +692,6 @@ img {
   font-size: 16px;
 }
 
-.study-template .linked-word-row {
-  min-height: 32px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  border-top: 1px solid #292524;
-  padding: 10px 16px;
-}
-
 .study-template .modal-footer {
   display: flex;
   justify-content: space-between;
@@ -754,8 +733,8 @@ img {
 }
 
 @media (max-width: 1100px) {
-  .study-template .board {
-    --word-panel-width: 320px;
+  .study-template {
+    --word-panel-width: 232px;
   }
 
   .study-template .search-box {
@@ -763,11 +742,11 @@ img {
   }
 
   .study-template .character-scroll {
-    padding-right: 340px;
+    padding-right: calc(var(--word-panel-width) + 28px);
   }
 
   .study-template .overlay {
-    right: 360px;
+    right: calc(var(--word-panel-width) + 40px);
   }
 }
 
@@ -841,6 +820,10 @@ img {
   .study-template .overlay {
     right: 0;
     padding: 12px;
+  }
+
+  .study-template .character-modal-shell {
+    right: 0;
   }
 
   .study-template .note-editor {

@@ -16,7 +16,6 @@ import {
 import {
   createCharacterId,
   createId,
-  findVocabularyForSentence,
   formatVocabularyText,
   getDefaultBoardPosition,
   getSentenceChapter,
@@ -191,7 +190,6 @@ export function StudyBoardPage({
         <SentenceBoardModal
           key={isNewSentenceOpen ? "new-sentence" : openedSentence.id}
           sentence={isNewSentenceOpen ? null : openedSentence}
-          vocabulary={data.vocabulary}
           onClose={closeSentenceModal}
           onDeleteSentence={deleteSentence}
           onSaveSentence={saveSentence}
@@ -315,7 +313,6 @@ function Board({
               key={sentence.id}
               sentence={sentence}
               sentenceIndex={index}
-              vocabulary={vocabulary}
               isDragging={draggingSentenceId === sentence.id}
               onDragEnd={() => setDraggingSentenceId(null)}
               onDragStart={(event) => {
@@ -348,15 +345,12 @@ function Board({
 function NoteCard({
   sentence,
   sentenceIndex,
-  vocabulary,
   isDragging,
   onDragEnd,
   onDragStart,
   onDropAtIndex,
   onOpen,
 }) {
-  const words = findVocabularyForSentence(sentence, vocabulary);
-
   return (
     <motion.article
       initial={{ opacity: 0, scale: 0.96 }}
@@ -389,13 +383,6 @@ function NoteCard({
         </div>
         <h3 className="note-title">{getSentenceTitle(sentence)}</h3>
         <p className="note-summary">{getSentenceSummary(sentence)}</p>
-        <div className="note-words">
-          {words.slice(0, 2).map((entry) => (
-            <span key={entry.id} className="tag">
-              {entry.word}: {entry.meaning}
-            </span>
-          ))}
-        </div>
       </button>
     </motion.article>
   );
@@ -466,7 +453,7 @@ function CharacterCard({ character, onOpen }) {
   );
 }
 
-function SentenceBoardModal({ sentence, vocabulary, onClose, onDeleteSentence, onSaveSentence }) {
+function SentenceBoardModal({ sentence, onClose, onDeleteSentence, onSaveSentence }) {
   const [draft, setDraft] = useState(createSentenceDraft(sentence));
   const [showKorean, setShowKorean] = useState(true);
   const isEdit = Boolean(sentence);
@@ -546,14 +533,6 @@ function SentenceBoardModal({ sentence, vocabulary, onClose, onDeleteSentence, o
             ) : null}
           </div>
 
-          <div className="linked-word-row">
-            {findVocabularyForSentence(draft, vocabulary).map((entry) => (
-              <span key={entry.id} className="tag">
-                {entry.word}: {entry.meaning}
-              </span>
-            ))}
-          </div>
-
           <div className="modal-footer">
             {isEdit ? (
               <button onClick={() => onDeleteSentence(sentence.id)} className="danger-button" type="button">
@@ -617,7 +596,7 @@ function CharacterModal({ character, onClose, onDeleteCharacter, onSaveCharacter
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed bottom-0 left-0 right-[400px] top-0 z-40 bg-black/70 p-6 backdrop-blur-sm"
+        className="character-modal-shell fixed bottom-0 left-0 top-0 z-40 bg-black/70 p-6 backdrop-blur-sm"
       >
         <motion.div
           initial={{ opacity: 0, scale: 0.96, y: 20 }}
@@ -764,7 +743,7 @@ function AddCharacterModal({ onClose, onSaveCharacter }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed bottom-0 left-0 right-[400px] top-0 z-40 grid place-items-center bg-black/65 p-6 backdrop-blur-sm"
+        className="character-modal-shell fixed bottom-0 left-0 top-0 z-40 grid place-items-center bg-black/65 p-6 backdrop-blur-sm"
       >
         <motion.div
           initial={{ opacity: 0, scale: 0.96, y: 16 }}
