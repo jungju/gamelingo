@@ -652,11 +652,18 @@ button:disabled {
 }
 
 .template-card,
+.selected-template,
 .character-card {
   border: 1px solid #2b2b2f;
   border-radius: 10px;
   background: #101010;
   padding: 10px;
+}
+
+.template-card.selected,
+.selected-template {
+  border-color: #d6d3d1;
+  background: #171717;
 }
 
 .template-card-heading,
@@ -668,6 +675,7 @@ button:disabled {
 }
 
 .template-card-heading h3,
+.selected-template h3,
 .character-card h3 {
   margin: 0;
   color: #fafaf9;
@@ -677,11 +685,17 @@ button:disabled {
 }
 
 .template-card-tools,
+.selected-template-heading,
 .character-card-tools {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   justify-content: flex-end;
+}
+
+.selected-template-heading {
+  align-items: flex-start;
+  justify-content: space-between;
 }
 
 .tag-list {

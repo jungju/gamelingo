@@ -224,6 +224,7 @@ function createDefaultEdithFinchData() {
     missionChecks: createDefaultMissionChecks(),
     sentences: sampleSentences,
     templates: [],
+    selectedTemplateId: "",
     characters: [],
   };
 }
@@ -236,6 +237,7 @@ function createEmptyGameNoteData() {
     missionChecks: createDefaultMissionChecks(),
     sentences: [],
     templates: [],
+    selectedTemplateId: "",
     characters: [],
   };
 }
@@ -419,6 +421,9 @@ function normalizeGameNoteData(data, gameId) {
   }
 
   const vocabulary = normalizeVocabularyEntries(data.vocabulary, data.wordMemo);
+  const templates = Array.isArray(data.templates)
+    ? data.templates.map(normalizeTemplate).filter(Boolean)
+    : defaultData.templates;
 
   return {
     wordMemo: typeof data.wordMemo === "string" ? data.wordMemo : defaultData.wordMemo,
@@ -428,9 +433,8 @@ function normalizeGameNoteData(data, gameId) {
     sentences: Array.isArray(data.sentences)
       ? data.sentences.map(normalizeSentence).filter(Boolean)
       : defaultData.sentences,
-    templates: Array.isArray(data.templates)
-      ? data.templates.map(normalizeTemplate).filter(Boolean)
-      : defaultData.templates,
+    templates,
+    selectedTemplateId: normalizeSelectedTemplateId(data.selectedTemplateId, templates),
     characters: Array.isArray(data.characters)
       ? data.characters.map(normalizeCharacter).filter(Boolean)
       : defaultData.characters,
@@ -439,6 +443,9 @@ function normalizeGameNoteData(data, gameId) {
 
 function normalizeCompactGameNoteData(data, gameId) {
   const defaultData = createDefaultGameNoteData(gameId);
+  const templates = Array.isArray(data?.t)
+    ? data.t.map(normalizeCompactTemplate).filter(Boolean)
+    : defaultData.templates;
 
   return {
     wordMemo: typeof data?.x === "string" ? data.x : defaultData.wordMemo,
@@ -448,9 +455,8 @@ function normalizeCompactGameNoteData(data, gameId) {
     sentences: Array.isArray(data?.s)
       ? data.s.map(normalizeCompactSentence).filter(Boolean)
       : defaultData.sentences,
-    templates: Array.isArray(data?.t)
-      ? data.t.map(normalizeCompactTemplate).filter(Boolean)
-      : defaultData.templates,
+    templates,
+    selectedTemplateId: normalizeSelectedTemplateId(data?.q, templates),
     characters: Array.isArray(data?.p)
       ? data.p.map(normalizeCompactCharacter).filter(Boolean)
       : defaultData.characters,
@@ -585,6 +591,10 @@ function serializeGameNoteData(data, gameId) {
 
   if (normalizedData.templates.length > 0) {
     compactData.t = normalizedData.templates.map(serializeTemplate);
+
+    if (normalizeSelectedTemplateId(normalizedData.selectedTemplateId, normalizedData.templates)) {
+      compactData.q = normalizedData.selectedTemplateId;
+    }
   }
 
   if (normalizedData.characters.length > 0) {
@@ -817,6 +827,14 @@ function normalizeTemplate(template) {
     createdAt: typeof template.createdAt === "string" ? template.createdAt : timestamp,
     updatedAt: typeof template.updatedAt === "string" ? template.updatedAt : timestamp,
   };
+}
+
+function normalizeSelectedTemplateId(selectedTemplateId, templates) {
+  if (typeof selectedTemplateId !== "string" || !selectedTemplateId.trim()) {
+    return "";
+  }
+
+  return templates.some((template) => template.id === selectedTemplateId) ? selectedTemplateId : "";
 }
 
 function normalizeCharacter(character) {
@@ -1994,6 +2012,7 @@ function StudyGamePage({
       setData((previousData) => ({
         ...previousData,
         templates: [newTemplate, ...(previousData.templates || [])],
+        selectedTemplateId: previousData.selectedTemplateId || newTemplate.id,
       }));
     }
 
@@ -2013,8 +2032,16 @@ function StudyGamePage({
     setData((previousData) => ({
       ...previousData,
       templates: (previousData.templates || []).filter((template) => template.id !== templateId),
+      selectedTemplateId: previousData.selectedTemplateId === templateId ? "" : previousData.selectedTemplateId,
     }));
     if (templateId === editingTemplateId) resetTemplateForm();
+  }
+
+  function selectTemplate(templateId) {
+    setData((previousData) => ({
+      ...previousData,
+      selectedTemplateId: normalizeSelectedTemplateId(templateId, previousData.templates || []),
+    }));
   }
 
   function updateCharacterForm(field, value) {
@@ -2252,6 +2279,7 @@ function StudyGamePage({
             <div className="right-column">
               <TemplatePanel
                 templates={data.templates}
+                selectedTemplateId={data.selectedTemplateId}
                 form={templateForm}
                 search={templateSearch}
                 editingTemplateId={editingTemplateId}
@@ -2260,6 +2288,7 @@ function StudyGamePage({
                 onEditTemplate={editTemplate}
                 onSaveTemplate={saveTemplate}
                 onSearchChange={setTemplateSearch}
+                onSelectTemplate={selectTemplate}
                 onUpdateForm={updateTemplateForm}
               />
               <SentenceList
@@ -2546,6 +2575,7 @@ function MissionPanel({ missionChecks, onToggleMission }) {
 
 function TemplatePanel({
   templates,
+  selectedTemplateId,
   form,
   search,
   editingTemplateId,
@@ -2554,9 +2584,11 @@ function TemplatePanel({
   onEditTemplate,
   onSaveTemplate,
   onSearchChange,
+  onSelectTemplate,
   onUpdateForm,
 }) {
   const safeTemplates = Array.isArray(templates) ? templates : [];
+  const selectedTemplate = safeTemplates.find((template) => template.id === selectedTemplateId) || null;
   const normalizedSearch = search.trim().toLowerCase();
   const visibleTemplates = normalizedSearch
     ? safeTemplates.filter((template) => {
@@ -2569,19 +2601,45 @@ function TemplatePanel({
     <section className="panel template-panel">
       <div className="panel-heading">
         <div>
-          <h2>템플릿 카드</h2>
-          <p>긴 문장이나 자주 참고할 표현을 카드로 저장합니다.</p>
+          <h2>게임 템플릿</h2>
+          <p>게임마다 다른 자유 형식 템플릿을 저장하고 선택합니다.</p>
         </div>
         <span className="small-badge">{safeTemplates.length}개</span>
       </div>
 
+      {selectedTemplate ? (
+        <article className="selected-template">
+          <div className="selected-template-heading">
+            <div>
+              <span className="card-label">선택된 템플릿</span>
+              <h3>{selectedTemplate.title}</h3>
+            </div>
+            <button className="button small secondary" type="button" onClick={() => onEditTemplate(selectedTemplate)}>
+              수정
+            </button>
+          </div>
+          {(selectedTemplate.tags || []).length > 0 ? (
+            <div className="tag-list" aria-label="선택된 템플릿 태그">
+              {(selectedTemplate.tags || []).map((tag) => (
+                <span key={tag} className="tag-pill">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          ) : null}
+          <p className="template-body">{selectedTemplate.body}</p>
+        </article>
+      ) : safeTemplates.length > 0 ? (
+        <p className="empty-message">사용할 템플릿을 선택하세요.</p>
+      ) : null}
+
       <form className="template-form" onSubmit={onSaveTemplate}>
         <label className="field">
-          <span>제목</span>
+          <span>템플릿 이름</span>
           <input
             value={form.title}
             onChange={(event) => onUpdateForm("title", event.target.value)}
-            placeholder="감정 표현"
+            placeholder="감정 표현, 퀘스트 대화, 인물 분석"
             required
           />
         </label>
@@ -2596,12 +2654,12 @@ function TemplatePanel({
         </label>
 
         <label className="field full-width">
-          <span>본문</span>
+          <span>템플릿 내용</span>
           <textarea
             value={form.body}
             onChange={(event) => onUpdateForm("body", event.target.value)}
-            placeholder="게임에서 자주 나오는 긴 문장이나 참고할 표현을 적어둡니다."
-            rows="4"
+            placeholder={"게임마다 필요한 형식 그대로 적습니다.\n예: 상황, 원문, 내 해석, 바꿔 쓸 문장, 확인할 인물 관계"}
+            rows="6"
             required
           />
         </label>
@@ -2634,10 +2692,21 @@ function TemplatePanel({
           <p className="empty-message">검색 결과가 없습니다.</p>
         ) : (
           visibleTemplates.map((template) => (
-            <article key={template.id} className="template-card">
+            <article
+              key={template.id}
+              className={`template-card ${template.id === selectedTemplateId ? "selected" : ""}`}
+            >
               <div className="template-card-heading">
                 <h3>{template.title}</h3>
                 <div className="template-card-tools">
+                  <button
+                    className="button small primary"
+                    type="button"
+                    onClick={() => onSelectTemplate(template.id)}
+                    disabled={template.id === selectedTemplateId}
+                  >
+                    {template.id === selectedTemplateId ? "선택됨" : "선택"}
+                  </button>
                   <button className="button small secondary" type="button" onClick={() => onEditTemplate(template)}>
                     수정
                   </button>
