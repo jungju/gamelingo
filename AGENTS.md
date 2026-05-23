@@ -1,5 +1,11 @@
 # AGENTS.md
 
+## First Read
+
+1. `README.md`
+2. `docs/spec.md`
+3. `src/App.jsx` for the current app/game registry structure
+
 ## Development Completion Rule
 
 For this project, after finishing any development change:

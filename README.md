@@ -4,6 +4,12 @@
 
 현재 1차 버전에는 `What Remains of Edith Finch` 플레이 노트가 구현되어 있습니다. 다른 게임은 나중에 `games` 배열과 페이지 렌더링 부분에 추가할 수 있습니다.
 
+## 문서
+
+- `docs/spec.md`: Codex가 먼저 읽는 제품 범위와 데이터 계약 진입점
+- `README.md`: 실행 방법, 사용 흐름, ohmesh 저장 형식, 게임 추가 위치
+- `AGENTS.md`: 에이전트 검증과 커밋 규칙
+
 ## 실행 방법
 
 ```bash
