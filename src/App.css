@@ -203,10 +203,29 @@ button:disabled {
   line-height: 1.05;
 }
 
+.home-title-block {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.home-add-button {
+  flex: 0 0 auto;
+  margin-top: 4px;
+  white-space: nowrap;
+}
+
 .home-game-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 14px;
+}
+
+.home-game-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
 }
 
 .home-game-button {
@@ -227,6 +246,13 @@ button:disabled {
   border-color: #d6d3d1;
   background: #e7e5e4;
   color: #151515;
+}
+
+.game-card-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .game-title {
@@ -259,6 +285,37 @@ button:disabled {
   border-radius: 8px;
   background: #eee3d3;
   object-fit: cover;
+}
+
+.generated-game-cover {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #171717;
+  color: #fafaf9;
+}
+
+.generated-game-cover::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 7px;
+  background: var(--cover-accent, #38bdf8);
+}
+
+.generated-game-cover span {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 62%;
+  aspect-ratio: 1;
+  border: 1px solid rgba(250, 250, 249, 0.22);
+  border-radius: 999px;
+  background: rgba(250, 250, 249, 0.08);
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .main-content,
@@ -314,6 +371,10 @@ button:disabled {
   background: #eee3d3;
   object-fit: cover;
   flex: 0 0 auto;
+}
+
+.study-game-art.generated-game-cover span {
+  font-size: 11px;
 }
 
 .page-description {
@@ -997,6 +1058,19 @@ button:disabled {
   padding: 22px;
 }
 
+.game-editor-modal {
+  width: min(520px, 100%);
+}
+
+.game-editor-form {
+  display: grid;
+  gap: 14px;
+}
+
+.game-editor-form .field {
+  margin-bottom: 0;
+}
+
 .modal-header {
   display: flex;
   align-items: flex-start;
@@ -1156,6 +1230,10 @@ button:disabled {
 
   .page-header-side {
     justify-content: flex-start;
+  }
+
+  .home-title-block {
+    flex-direction: column;
   }
 }
 

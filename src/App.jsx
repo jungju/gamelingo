@@ -4,21 +4,26 @@ import "./App.css";
 const OHMESH_BASE_URL = "https://ohmesh.jjgo.io";
 const OHMESH_APP_SLUG = "gamelingo";
 const REGISTERED_REDIRECT_URL = "https://gamelingo.jjgo.io";
-const EDITH_FINCH_RECORD_TYPE = "edith-finch-study-state";
+const APP_RECORD_TYPE = "gamelingo-study-state";
+const APP_STORAGE_VERSION = 3;
+const GUEST_APP_KEY = "gamelingo:v3:app:guest";
+const PENDING_GUEST_SAVE_KEY = "gamelingo:v3:pendingGuestSave";
+const LEGACY_PENDING_GUEST_SAVE_KEY = "gamelingo:v2:pendingGuestSave";
+const LEGACY_EDITH_FINCH_RECORD_TYPE = "edith-finch-study-state";
 const EDITH_FINCH_STORAGE_VERSION = 2;
-const GUEST_EDITH_FINCH_KEY = "gamelingo:v2:edithFinch:guest";
-const PENDING_GUEST_SAVE_KEY = "gamelingo:v2:pendingGuestSave";
+const LEGACY_GUEST_EDITH_FINCH_KEY = "gamelingo:v2:edithFinch:guest";
 const EDITH_FINCH_ID = "edith-finch";
 const HOME_PATH = "/";
 const EDITH_FINCH_COVER = "/edith-finch-cover.png";
 
-const games = [
+const defaultGames = [
   {
     id: EDITH_FINCH_ID,
     path: "/games/edith-finch",
     title: "What Remains of Edith Finch",
     description: "대사를 내 문장으로 바꾸기",
     artwork: EDITH_FINCH_COVER,
+    isCustom: false,
   },
 ];
 
@@ -170,6 +175,43 @@ const edithFinchGuide = {
   ],
 };
 
+const genericGameGuide = {
+  title: "플레이 미션",
+  description:
+    "게임을 즐기면서 실제로 써보고 싶은 짧은 영어 문장을 모읍니다. 모든 대사를 정리하기보다 내 상황에 바꿔 말할 수 있는 문장에 집중합니다.",
+  steps: [
+    {
+      title: "먼저 게임을 즐기기",
+      bullets: ["흐름을 끊지 않고 플레이합니다.", "모르는 문장이 나와도 일단 지나가도 됩니다."],
+    },
+    {
+      title: "짧은 문장 저장하기",
+      bullets: ["마음에 남는 영어 문장을 발견하면 원문만 빠르게 저장합니다."],
+    },
+    {
+      title: "뜻과 단어 남기기",
+      bullets: ["나중에 다시 봐도 기억날 만큼만 뜻과 단어를 적습니다."],
+    },
+    {
+      title: "내 문장으로 바꾸기",
+      bullets: ["게임 문장을 내 일상에서 쓸 수 있는 문장으로 바꿔봅니다."],
+      example: {
+        original: "I need a minute.",
+        mine: "I need a minute before the call.",
+      },
+    },
+    {
+      title: "소리 내서 연습하기",
+      bullets: ["원문과 내 문장을 한 번씩 소리 내서 말한 뒤 연습 완료로 체크합니다."],
+    },
+  ],
+  tips: [
+    "한 번 플레이할 때 문장 몇 개만 챙겨도 충분합니다.",
+    "긴 문장보다 입으로 말하기 쉬운 문장이 좋습니다.",
+    "뜻을 완벽하게 정리하기보다 다시 봤을 때 떠오르는 정도면 됩니다.",
+  ],
+};
+
 function createDefaultMissionChecks() {
   return missionItems.reduce((checks, item) => ({ ...checks, [item.id]: false }), {});
 }
@@ -181,6 +223,29 @@ function createDefaultEdithFinchData() {
     storyMemo: "",
     missionChecks: createDefaultMissionChecks(),
     sentences: sampleSentences,
+  };
+}
+
+function createEmptyGameNoteData() {
+  return {
+    wordMemo: "",
+    vocabulary: [],
+    storyMemo: "",
+    missionChecks: createDefaultMissionChecks(),
+    sentences: [],
+  };
+}
+
+function createDefaultGameNoteData(gameId) {
+  return gameId === EDITH_FINCH_ID ? createDefaultEdithFinchData() : createEmptyGameNoteData();
+}
+
+function createDefaultAppData(edithFinchData = createDefaultEdithFinchData()) {
+  return {
+    customGames: [],
+    notesByGameId: {
+      [EDITH_FINCH_ID]: normalizeGameNoteData(edithFinchData, EDITH_FINCH_ID),
+    },
   };
 }
 
@@ -203,26 +268,134 @@ function createVocabularyId() {
   return `vocabulary-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function createGameId(title, existingIds = new Set()) {
+  const slug = slugifyGameTitle(title);
+
+  while (true) {
+    const suffix = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+    const candidate = `custom-${slug}-${suffix}`;
+
+    if (!existingIds.has(candidate)) {
+      return candidate;
+    }
+  }
+}
+
+function slugifyGameTitle(title) {
+  const slug = title
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+
+  return slug || "game";
+}
+
 function createDefaultVocabularyEntries() {
   return defaultVocabularyEntries.map((entry) => ({ ...entry }));
 }
 
+function normalizeAppData(data) {
+  if (!data || typeof data !== "object") {
+    return createDefaultAppData();
+  }
+
+  if (data.v === APP_STORAGE_VERSION) {
+    return normalizeCompactAppData(data);
+  }
+
+  if (Array.isArray(data.customGames) || data.notesByGameId) {
+    return normalizeRuntimeAppData(data);
+  }
+
+  return createDefaultAppData(normalizeEdithFinchData(data));
+}
+
+function normalizeCompactAppData(data) {
+  const customGames = normalizeCustomGames(data.g);
+  const validGameIds = new Set([EDITH_FINCH_ID, ...customGames.map((game) => game.id)]);
+  const compactNotes = data.n && typeof data.n === "object" ? data.n : {};
+  const notesByGameId = {};
+
+  validGameIds.forEach((gameId) => {
+    notesByGameId[gameId] = normalizeCompactGameNoteData(compactNotes[gameId], gameId);
+  });
+
+  return { customGames, notesByGameId };
+}
+
+function normalizeRuntimeAppData(data) {
+  const customGames = normalizeCustomGames(data.customGames);
+  const validGameIds = new Set([EDITH_FINCH_ID, ...customGames.map((game) => game.id)]);
+  const rawNotesByGameId = data.notesByGameId && typeof data.notesByGameId === "object" ? data.notesByGameId : {};
+  const notesByGameId = {};
+
+  validGameIds.forEach((gameId) => {
+    notesByGameId[gameId] = normalizeGameNoteData(rawNotesByGameId[gameId], gameId);
+  });
+
+  return { customGames, notesByGameId };
+}
+
+function normalizeCustomGames(customGames) {
+  if (!Array.isArray(customGames)) return [];
+
+  const seenGameIds = new Set(defaultGames.map((game) => game.id));
+
+  return customGames
+    .map((game) => normalizeCustomGame(game, seenGameIds))
+    .filter(Boolean);
+}
+
+function normalizeCustomGame(game, seenGameIds) {
+  if (!game || typeof game !== "object") return null;
+
+  const title = typeof game.title === "string" ? game.title.trim() : "";
+  if (!title) return null;
+
+  const rawId = typeof game.id === "string" ? game.id : "";
+  const id = isSafeGameId(rawId) ? rawId : createGameId(title, seenGameIds);
+  if (seenGameIds.has(id)) return null;
+
+  seenGameIds.add(id);
+
+  const timestamp = new Date().toISOString();
+
+  return {
+    id,
+    title,
+    description: typeof game.description === "string" ? game.description.trim() : "",
+    createdAt: typeof game.createdAt === "string" ? game.createdAt : timestamp,
+    updatedAt: typeof game.updatedAt === "string" ? game.updatedAt : timestamp,
+  };
+}
+
+function isSafeGameId(id) {
+  return /^[a-z0-9][a-z0-9-]{1,96}$/.test(id);
+}
+
 function normalizeEdithFinchData(data) {
-  const defaultData = createDefaultEdithFinchData();
+  return normalizeGameNoteData(data, EDITH_FINCH_ID);
+}
+
+function normalizeGameNoteData(data, gameId) {
+  const defaultData = createDefaultGameNoteData(gameId);
 
   if (!data || typeof data !== "object") {
     return defaultData;
   }
 
   if (data.v === EDITH_FINCH_STORAGE_VERSION) {
-    return normalizeCompactEdithFinchData(data);
+    return normalizeCompactGameNoteData(data, gameId);
   }
 
   const vocabulary = normalizeVocabularyEntries(data.vocabulary, data.wordMemo);
 
   return {
     wordMemo: typeof data.wordMemo === "string" ? data.wordMemo : defaultData.wordMemo,
-    vocabulary: isLegacySampleVocabulary(vocabulary) ? defaultData.vocabulary : vocabulary,
+    vocabulary: gameId === EDITH_FINCH_ID && isLegacySampleVocabulary(vocabulary) ? defaultData.vocabulary : vocabulary,
     storyMemo: typeof data.storyMemo === "string" ? data.storyMemo : defaultData.storyMemo,
     missionChecks: normalizeMissionChecks(data.missionChecks),
     sentences: Array.isArray(data.sentences)
@@ -231,15 +404,15 @@ function normalizeEdithFinchData(data) {
   };
 }
 
-function normalizeCompactEdithFinchData(data) {
-  const defaultData = createDefaultEdithFinchData();
+function normalizeCompactGameNoteData(data, gameId) {
+  const defaultData = createDefaultGameNoteData(gameId);
 
   return {
-    wordMemo: typeof data.x === "string" ? data.x : defaultData.wordMemo,
-    vocabulary: typeof data.w === "string" ? parseVocabularyText(data.w) : defaultData.vocabulary,
-    storyMemo: typeof data.m === "string" ? data.m : defaultData.storyMemo,
-    missionChecks: normalizeCompactMissionChecks(data.c),
-    sentences: Array.isArray(data.s)
+    wordMemo: typeof data?.x === "string" ? data.x : defaultData.wordMemo,
+    vocabulary: typeof data?.w === "string" ? parseVocabularyText(data.w) : defaultData.vocabulary,
+    storyMemo: typeof data?.m === "string" ? data.m : defaultData.storyMemo,
+    missionChecks: normalizeCompactMissionChecks(data?.c),
+    sentences: Array.isArray(data?.s)
       ? data.s.map(normalizeCompactSentence).filter(Boolean)
       : defaultData.sentences,
   };
@@ -270,12 +443,44 @@ function normalizeCompactSentence(sentence) {
   return normalizeSentence(sentence);
 }
 
-function serializeEdithFinchData(data) {
-  const normalizedData = normalizeEdithFinchData(data);
-  const compactData = { v: EDITH_FINCH_STORAGE_VERSION };
+function serializeAppData(data) {
+  const normalizedData = normalizeAppData(data);
+  const compactData = { v: APP_STORAGE_VERSION };
+  const notesByGameId = {};
+  const gameIds = [EDITH_FINCH_ID, ...normalizedData.customGames.map((game) => game.id)];
+
+  if (normalizedData.customGames.length > 0) {
+    compactData.g = normalizedData.customGames.map((game) => ({
+      id: game.id,
+      title: game.title,
+      description: game.description,
+      createdAt: game.createdAt,
+      updatedAt: game.updatedAt,
+    }));
+  }
+
+  gameIds.forEach((gameId) => {
+    const compactNote = serializeGameNoteData(normalizedData.notesByGameId[gameId], gameId);
+
+    if (Object.keys(compactNote).length > 0) {
+      notesByGameId[gameId] = compactNote;
+    }
+  });
+
+  if (Object.keys(notesByGameId).length > 0) {
+    compactData.n = notesByGameId;
+  }
+
+  return compactData;
+}
+
+function serializeGameNoteData(data, gameId) {
+  const normalizedData = normalizeGameNoteData(data, gameId);
+  const defaultData = createDefaultGameNoteData(gameId);
+  const compactData = {};
   const missionMask = serializeMissionChecks(normalizedData.missionChecks);
   const vocabularyText = formatVocabularyText(normalizedData.vocabulary);
-  const defaultVocabularyText = formatVocabularyText(createDefaultVocabularyEntries());
+  const defaultVocabularyText = formatVocabularyText(defaultData.vocabulary);
 
   if (normalizedData.wordMemo) {
     compactData.x = normalizedData.wordMemo;
@@ -293,15 +498,15 @@ function serializeEdithFinchData(data) {
     compactData.c = missionMask;
   }
 
-  if (!areSentencesEquivalent(normalizedData.sentences, sampleSentences)) {
+  if (!areSentencesEquivalent(normalizedData.sentences, defaultData.sentences)) {
     compactData.s = normalizedData.sentences.map(serializeSentence);
   }
 
   return compactData;
 }
 
-function hasCustomEdithFinchData(data) {
-  return JSON.stringify(serializeEdithFinchData(data)) !== JSON.stringify({ v: EDITH_FINCH_STORAGE_VERSION });
+function hasCustomAppData(data) {
+  return JSON.stringify(serializeAppData(data)) !== JSON.stringify({ v: APP_STORAGE_VERSION });
 }
 
 function serializeMissionChecks(missionChecks) {
@@ -497,22 +702,34 @@ function readRoutePath() {
   return normalizeRoutePath(window.location.pathname);
 }
 
-function loadGuestEdithFinchData() {
-  if (typeof window === "undefined") return createDefaultEdithFinchData();
+function loadGuestAppData() {
+  if (typeof window === "undefined") return createDefaultAppData();
 
   try {
-    const savedData = window.localStorage.getItem(GUEST_EDITH_FINCH_KEY);
-    return savedData ? normalizeEdithFinchData(JSON.parse(savedData)) : createDefaultEdithFinchData();
+    const savedData = window.localStorage.getItem(GUEST_APP_KEY);
+
+    if (savedData) {
+      return normalizeAppData(JSON.parse(savedData));
+    }
   } catch {
-    return createDefaultEdithFinchData();
+    // 새 저장값이 깨졌다면 legacy fallback까지 확인한다.
+  }
+
+  try {
+    const legacyEdithFinchData = window.localStorage.getItem(LEGACY_GUEST_EDITH_FINCH_KEY);
+    return legacyEdithFinchData
+      ? createDefaultAppData(normalizeEdithFinchData(JSON.parse(legacyEdithFinchData)))
+      : createDefaultAppData();
+  } catch {
+    return createDefaultAppData();
   }
 }
 
-function saveGuestEdithFinchData(data) {
+function saveGuestAppData(data) {
   if (typeof window === "undefined") return;
 
   try {
-    window.localStorage.setItem(GUEST_EDITH_FINCH_KEY, JSON.stringify(serializeEdithFinchData(data)));
+    window.localStorage.setItem(GUEST_APP_KEY, JSON.stringify(serializeAppData(data)));
   } catch {
     // 게스트 저장 실패는 앱 사용을 막지 않는다.
   }
@@ -532,7 +749,10 @@ function hasPendingGuestSave() {
   if (typeof window === "undefined") return false;
 
   try {
-    return window.localStorage.getItem(PENDING_GUEST_SAVE_KEY) === "1";
+    return (
+      window.localStorage.getItem(PENDING_GUEST_SAVE_KEY) === "1" ||
+      window.localStorage.getItem(LEGACY_PENDING_GUEST_SAVE_KEY) === "1"
+    );
   } catch {
     return false;
   }
@@ -543,6 +763,7 @@ function clearPendingGuestSave() {
 
   try {
     window.localStorage.removeItem(PENDING_GUEST_SAVE_KEY);
+    window.localStorage.removeItem(LEGACY_PENDING_GUEST_SAVE_KEY);
   } catch {
     // 제거 실패는 다음 저장 때 다시 정리된다.
   }
@@ -619,6 +840,54 @@ function getSyncStatusLabel(syncState) {
   return "대기";
 }
 
+function createGameLibrary(customGames) {
+  return [
+    ...defaultGames,
+    ...customGames.map((game) => ({
+      ...game,
+      path: `/games/${game.id}`,
+      description: game.description || "내 게임 문장 노트",
+      isCustom: true,
+    })),
+  ];
+}
+
+function getKnownGameIds(appData) {
+  return new Set([...defaultGames.map((game) => game.id), ...appData.customGames.map((game) => game.id)]);
+}
+
+function getGameGuide(game) {
+  if (game.id === EDITH_FINCH_ID) return edithFinchGuide;
+
+  return {
+    ...genericGameGuide,
+    title: `${game.title} 플레이 미션`,
+  };
+}
+
+function getGameCoverLabel(game) {
+  const titleWords = game.title
+    .split(/\s+/)
+    .map((word) => word.trim())
+    .filter(Boolean);
+
+  if (titleWords.length >= 2) {
+    return titleWords
+      .slice(0, 2)
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase();
+  }
+
+  return (game.title[0] || "G").toUpperCase();
+}
+
+function getGameAccentColor(gameId) {
+  const colors = ["#38bdf8", "#f97316", "#84cc16", "#f43f5e", "#eab308", "#14b8a6"];
+  const colorIndex = [...gameId].reduce((sum, character) => sum + character.charCodeAt(0), 0) % colors.length;
+  return colors[colorIndex];
+}
+
 export default function App() {
   const [routePath, setRoutePath] = useState(readRoutePath);
   const [authState, setAuthState] = useState({
@@ -628,7 +897,7 @@ export default function App() {
     session: null,
     message: "로그인 상태를 확인하는 중입니다.",
   });
-  const [edithFinchData, setEdithFinchData] = useState(loadGuestEdithFinchData);
+  const [appData, setAppData] = useState(loadGuestAppData);
   const [storageRecord, setStorageRecord] = useState(null);
   const [syncState, setSyncState] = useState({
     status: "local",
@@ -776,8 +1045,8 @@ export default function App() {
   useEffect(() => {
     if (authState.status !== "signed-out" && authState.status !== "error") return;
 
-    saveGuestEdithFinchData(edithFinchData);
-  }, [authState.status, edithFinchData]);
+    saveGuestAppData(appData);
+  }, [authState.status, appData]);
 
   useEffect(() => {
     if (authState.status !== "signed-in") return undefined;
@@ -794,37 +1063,64 @@ export default function App() {
       lastSavedDataJsonRef.current = "";
 
       try {
-        const listResponse = await ohmeshFetch(
-          `/api/apps/${OHMESH_APP_SLUG}/records?type=${encodeURIComponent(EDITH_FINCH_RECORD_TYPE)}&limit=100&offset=0`
-        );
+        async function loadLatestRecord(recordType) {
+          const listResponse = await ohmeshFetch(
+            `/api/apps/${OHMESH_APP_SLUG}/records?type=${encodeURIComponent(recordType)}&limit=100&offset=0`
+          );
 
-        if (shouldIgnore || handleSessionProblem(listResponse)) return;
+          if (shouldIgnore || handleSessionProblem(listResponse)) return undefined;
 
-        if (!listResponse.ok) {
-          throw new Error(await getResponseErrorMessage(listResponse, "노트를 불러오지 못했습니다."));
-        }
+          if (!listResponse.ok) {
+            throw new Error(await getResponseErrorMessage(listResponse, "노트를 불러오지 못했습니다."));
+          }
 
-        const recordList = await readResponseJson(listResponse);
-        let activeRecord = selectLatestRecord(Array.isArray(recordList?.records) ? recordList.records : []);
+          const recordList = await readResponseJson(listResponse);
+          const recordSummary = selectLatestRecord(Array.isArray(recordList?.records) ? recordList.records : []);
 
-        if (activeRecord) {
-          const recordResponse = await ohmeshFetch(`/api/apps/${OHMESH_APP_SLUG}/records/${activeRecord.id}`);
+          if (!recordSummary) return null;
 
-          if (shouldIgnore || handleSessionProblem(recordResponse)) return;
+          const recordResponse = await ohmeshFetch(`/api/apps/${OHMESH_APP_SLUG}/records/${recordSummary.id}`);
+
+          if (shouldIgnore || handleSessionProblem(recordResponse)) return undefined;
 
           if (!recordResponse.ok) {
             throw new Error(await getResponseErrorMessage(recordResponse, "노트를 읽지 못했습니다."));
           }
 
-          activeRecord = await readResponseJson(recordResponse);
-        } else {
-          const defaultData = createDefaultEdithFinchData();
+          return readResponseJson(recordResponse);
+        }
+
+        let activeRecord = await loadLatestRecord(APP_RECORD_TYPE);
+        if (shouldIgnore || activeRecord === undefined) return;
+
+        let migratedLegacyData = null;
+
+        if (!activeRecord) {
+          const legacyRecord = await loadLatestRecord(LEGACY_EDITH_FINCH_RECORD_TYPE);
+          if (shouldIgnore || legacyRecord === undefined) return;
+
+          if (legacyRecord) {
+            migratedLegacyData = createDefaultAppData(normalizeEdithFinchData(legacyRecord.data));
+          }
+        }
+
+        const pendingGuestData = hasPendingGuestSave() ? loadGuestAppData() : null;
+        const shouldUploadGuestData = Boolean(pendingGuestData && hasCustomAppData(pendingGuestData));
+        const normalizedData = shouldUploadGuestData
+          ? pendingGuestData
+          : activeRecord
+            ? normalizeAppData(activeRecord.data)
+            : migratedLegacyData || createDefaultAppData();
+        const compactData = serializeAppData(normalizedData);
+        const compactDataJson = JSON.stringify(compactData);
+
+        if (!activeRecord) {
           const createResponse = await ohmeshFetch(`/api/apps/${OHMESH_APP_SLUG}/records`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              type: EDITH_FINCH_RECORD_TYPE,
-              data: serializeEdithFinchData(defaultData),
+              type: APP_RECORD_TYPE,
+              data: compactData,
             }),
           });
 
@@ -835,17 +1131,7 @@ export default function App() {
           }
 
           activeRecord = await readResponseJson(createResponse);
-        }
-
-        const pendingGuestData = hasPendingGuestSave() ? loadGuestEdithFinchData() : null;
-        const shouldUploadGuestData = Boolean(pendingGuestData && hasCustomEdithFinchData(pendingGuestData));
-        const normalizedData = shouldUploadGuestData
-          ? pendingGuestData
-          : normalizeEdithFinchData(activeRecord?.data);
-        const compactData = serializeEdithFinchData(normalizedData);
-        const compactDataJson = JSON.stringify(compactData);
-
-        if (JSON.stringify(activeRecord?.data) !== compactDataJson) {
+        } else if (JSON.stringify(activeRecord?.data) !== compactDataJson) {
           const compactResponse = await ohmeshFetch(`/api/apps/${OHMESH_APP_SLUG}/records/${activeRecord.id}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
@@ -870,8 +1156,8 @@ export default function App() {
         if (shouldIgnore) return;
 
         setStorageRecord(activeRecord);
-        setEdithFinchData(normalizedData);
-        saveGuestEdithFinchData(normalizedData);
+        setAppData(normalizedData);
+        saveGuestAppData(normalizedData);
         setIsRemoteDataReady(true);
         setSyncState({
           status: "saved",
@@ -900,7 +1186,7 @@ export default function App() {
       return undefined;
     }
 
-    const compactData = serializeEdithFinchData(edithFinchData);
+    const compactData = serializeAppData(appData);
     const nextDataJson = JSON.stringify(compactData);
 
     if (nextDataJson === lastSavedDataJsonRef.current) {
@@ -928,7 +1214,7 @@ export default function App() {
         const updatedRecord = await readResponseJson(response);
         lastSavedDataJsonRef.current = nextDataJson;
         setStorageRecord(updatedRecord);
-        saveGuestEdithFinchData(edithFinchData);
+        saveGuestAppData(appData);
         setSyncState({ status: "saved", message: "ohmesh에 저장되어 있습니다." });
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return;
@@ -944,9 +1230,13 @@ export default function App() {
       window.clearTimeout(saveTimer);
       abortController.abort();
     };
-  }, [authState.status, edithFinchData, handleSessionProblem, isRemoteDataReady, storageRecord?.id]);
+  }, [authState.status, appData, handleSessionProblem, isRemoteDataReady, storageRecord?.id]);
 
-  const selectedGameInfo = games.find((game) => game.path === routePath);
+  const gameLibrary = createGameLibrary(appData.customGames);
+  const selectedGameInfo = gameLibrary.find((game) => game.path === routePath);
+  const selectedGameData = selectedGameInfo
+    ? appData.notesByGameId[selectedGameInfo.id] || createDefaultGameNoteData(selectedGameInfo.id)
+    : null;
 
   function navigateTo(path) {
     const routePath = normalizeRoutePath(path);
@@ -959,7 +1249,7 @@ export default function App() {
   }
 
   function saveToOhmesh() {
-    saveGuestEdithFinchData(edithFinchData);
+    saveGuestAppData(appData);
     markPendingGuestSave();
     login();
   }
@@ -970,6 +1260,82 @@ export default function App() {
 
   function retryStorageLoad() {
     setStorageReloadKey((previousKey) => previousKey + 1);
+  }
+
+  function setSelectedGameData(updater) {
+    if (!selectedGameInfo) return;
+
+    const gameId = selectedGameInfo.id;
+
+    setAppData((previousData) => {
+      const previousNote = previousData.notesByGameId[gameId] || createDefaultGameNoteData(gameId);
+      const nextNote = typeof updater === "function" ? updater(previousNote) : updater;
+
+      return {
+        ...previousData,
+        notesByGameId: {
+          ...previousData.notesByGameId,
+          [gameId]: normalizeGameNoteData(nextNote, gameId),
+        },
+      };
+    });
+  }
+
+  function createCustomGame({ title, description }) {
+    const timestamp = new Date().toISOString();
+    const game = {
+      id: createGameId(title, getKnownGameIds(appData)),
+      title: title.trim(),
+      description: description.trim(),
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+
+    setAppData((previousData) => ({
+      ...previousData,
+      customGames: [...previousData.customGames, game],
+      notesByGameId: {
+        ...previousData.notesByGameId,
+        [game.id]: createDefaultGameNoteData(game.id),
+      },
+    }));
+
+    return game;
+  }
+
+  function updateCustomGame(gameId, { title, description }) {
+    const timestamp = new Date().toISOString();
+
+    setAppData((previousData) => ({
+      ...previousData,
+      customGames: previousData.customGames.map((game) =>
+        game.id === gameId
+          ? {
+              ...game,
+              title: title.trim(),
+              description: description.trim(),
+              updatedAt: timestamp,
+            }
+          : game
+      ),
+    }));
+  }
+
+  function deleteCustomGame(gameId) {
+    setAppData((previousData) => {
+      const remainingNotesByGameId = { ...previousData.notesByGameId };
+      delete remainingNotesByGameId[gameId];
+
+      return {
+        ...previousData,
+        customGames: previousData.customGames.filter((game) => game.id !== gameId),
+        notesByGameId: remainingNotesByGameId,
+      };
+    });
+
+    if (routePath === `/games/${gameId}`) {
+      navigateTo(HOME_PATH);
+    }
   }
 
   if (authState.status === "checking") {
@@ -1015,27 +1381,27 @@ export default function App() {
     <div className={`app-shell ${selectedGameInfo ? "study-shell" : "home-shell"}`}>
       {selectedGameInfo ? (
         <main className="main-content">
-          {selectedGameInfo.id === EDITH_FINCH_ID ? (
-            <EdithFinchPage
-              data={edithFinchData}
-              setData={setEdithFinchData}
-              syncState={syncState}
-              user={authState.user}
-              isGuestMode={isGuestMode}
-              onGoHome={() => navigateTo(HOME_PATH)}
-              onLogout={logout}
-              onSaveToOhmesh={saveToOhmesh}
-            />
-          ) : (
-            <ComingSoonPage game={selectedGameInfo} onGoHome={() => navigateTo(HOME_PATH)} />
-          )}
+          <StudyGamePage
+            game={selectedGameInfo}
+            data={selectedGameData}
+            setData={setSelectedGameData}
+            syncState={syncState}
+            user={authState.user}
+            isGuestMode={isGuestMode}
+            onGoHome={() => navigateTo(HOME_PATH)}
+            onLogout={logout}
+            onSaveToOhmesh={saveToOhmesh}
+          />
         </main>
       ) : (
         <HomePage
-          games={games}
+          games={gameLibrary}
           syncState={syncState}
           user={authState.user}
           isGuestMode={isGuestMode}
+          onCreateGame={createCustomGame}
+          onDeleteGame={deleteCustomGame}
+          onUpdateGame={updateCustomGame}
           onLogout={logout}
           onSaveToOhmesh={saveToOhmesh}
           onSelectGame={(game) => navigateTo(game.path)}
@@ -1086,7 +1452,52 @@ function AuthStatePage({
   );
 }
 
-function HomePage({ games, syncState, user, isGuestMode, onLogout, onSaveToOhmesh, onSelectGame }) {
+function HomePage({
+  games,
+  syncState,
+  user,
+  isGuestMode,
+  onCreateGame,
+  onDeleteGame,
+  onUpdateGame,
+  onLogout,
+  onSaveToOhmesh,
+  onSelectGame,
+}) {
+  const [editingGame, setEditingGame] = useState(null);
+  const [isGameEditorOpen, setIsGameEditorOpen] = useState(false);
+
+  function openCreateGame() {
+    setEditingGame(null);
+    setIsGameEditorOpen(true);
+  }
+
+  function openEditGame(game) {
+    setEditingGame(game);
+    setIsGameEditorOpen(true);
+  }
+
+  function closeGameEditor() {
+    setIsGameEditorOpen(false);
+    setEditingGame(null);
+  }
+
+  function saveGame(gameDraft) {
+    if (editingGame) {
+      onUpdateGame(editingGame.id, gameDraft);
+    } else {
+      onCreateGame(gameDraft);
+    }
+
+    closeGameEditor();
+  }
+
+  function deleteGame(game) {
+    if (window.confirm(`"${game.title}" 게임과 저장한 노트를 삭제할까요?`)) {
+      onDeleteGame(game.id);
+    }
+  }
+
   return (
     <main className="home-page">
       <header className="home-header">
@@ -1101,33 +1512,143 @@ function HomePage({ games, syncState, user, isGuestMode, onLogout, onSaveToOhmes
             onSaveToOhmesh={onSaveToOhmesh}
           />
         </div>
-        <div>
-          <p className="eyebrow">게임 선택</p>
-          <h1>오늘 공부할 게임을 고르세요</h1>
-          <p className="page-description">공부 화면에서는 선택한 게임의 문장 노트에만 집중합니다.</p>
+        <div className="home-title-block">
+          <div>
+            <p className="eyebrow">게임 선택</p>
+            <h1>오늘 공부할 게임을 고르세요</h1>
+            <p className="page-description">공부 화면에서는 선택한 게임의 문장 노트에만 집중합니다.</p>
+          </div>
+          <button className="button primary home-add-button" type="button" onClick={openCreateGame}>
+            게임 추가
+          </button>
         </div>
       </header>
 
       <section className="home-game-grid" aria-label="게임 선택">
         {games.map((game) => (
-          <a
-            key={game.id}
-            href={game.path}
-            className="home-game-button"
-            onClick={(event) => {
-              if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-              event.preventDefault();
-              onSelectGame(game);
-            }}
-          >
-            <img className="game-card-art" src={game.artwork} alt="" />
-            <span className="game-title">{game.title}</span>
-            <span className="game-description">{game.description}</span>
-            <span className="game-action">공부 시작</span>
-          </a>
+          <article key={game.id} className="home-game-card">
+            <a
+              href={game.path}
+              className="home-game-button"
+              onClick={(event) => {
+                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                event.preventDefault();
+                onSelectGame(game);
+              }}
+            >
+              <GameCover game={game} className="game-card-art" />
+              <span className="game-title">{game.title}</span>
+              <span className="game-description">{game.description}</span>
+              <span className="game-action">공부 시작</span>
+            </a>
+            {game.isCustom ? (
+              <div className="game-card-tools">
+                <button className="button small secondary" type="button" onClick={() => openEditGame(game)}>
+                  수정
+                </button>
+                <button className="button small danger" type="button" onClick={() => deleteGame(game)}>
+                  삭제
+                </button>
+              </div>
+            ) : null}
+          </article>
         ))}
       </section>
+
+      {isGameEditorOpen ? (
+        <GameEditorModal game={editingGame} onClose={closeGameEditor} onSaveGame={saveGame} />
+      ) : null}
     </main>
+  );
+}
+
+function GameEditorModal({ game, onClose, onSaveGame }) {
+  const [title, setTitle] = useState(game?.title || "");
+  const [description, setDescription] = useState(game?.description || "");
+  const isEditing = Boolean(game);
+
+  useEffect(() => {
+    function closeWithEscape(event) {
+      if (event.key === "Escape") onClose();
+    }
+
+    window.addEventListener("keydown", closeWithEscape);
+    return () => window.removeEventListener("keydown", closeWithEscape);
+  }, [onClose]);
+
+  function saveGame(event) {
+    event.preventDefault();
+
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) return;
+
+    onSaveGame({
+      title: trimmedTitle,
+      description: description.trim(),
+    });
+  }
+
+  return (
+    <div className="modal-backdrop" role="presentation" onClick={onClose}>
+      <section
+        className="modal-card game-editor-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="game-editor-title"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <form className="game-editor-form" onSubmit={saveGame}>
+          <div className="modal-header">
+            <div>
+              <p className="eyebrow">게임 관리</p>
+              <h2 id="game-editor-title">{isEditing ? "게임 수정" : "게임 추가"}</h2>
+            </div>
+            <button className="button small secondary" type="button" onClick={onClose}>
+              닫기
+            </button>
+          </div>
+
+          <label className="field">
+            <span>제목</span>
+            <input value={title} onChange={(event) => setTitle(event.target.value)} required />
+          </label>
+
+          <label className="field">
+            <span>설명</span>
+            <textarea
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              rows="3"
+            />
+          </label>
+
+          <div className="button-row">
+            <button className="button secondary" type="button" onClick={onClose}>
+              취소
+            </button>
+            <button className="button primary" type="submit">
+              {isEditing ? "수정 저장" : "게임 추가"}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  );
+}
+
+function GameCover({ game, className }) {
+  if (game.artwork) {
+    return <img className={className} src={game.artwork} alt="" />;
+  }
+
+  return (
+    <div
+      className={`${className} generated-game-cover`}
+      style={{ "--cover-accent": getGameAccentColor(game.id) }}
+      aria-hidden="true"
+    >
+      <span>{getGameCoverLabel(game)}</span>
+    </div>
   );
 }
 
@@ -1157,7 +1678,8 @@ function SyncStatusBadge({ syncState }) {
   );
 }
 
-function EdithFinchPage({
+function StudyGamePage({
+  game,
   data,
   setData,
   syncState,
@@ -1174,6 +1696,9 @@ function EdithFinchPage({
   const [isFamilyTreeOpen, setIsFamilyTreeOpen] = useState(false);
   const [isStoryDrawerOpen, setIsStoryDrawerOpen] = useState(false);
   const [isVocabularyDrawerOpen, setIsVocabularyDrawerOpen] = useState(false);
+  const isEdithFinch = game.id === EDITH_FINCH_ID;
+  const guide = getGameGuide(game);
+  const defaultVocabulary = createDefaultGameNoteData(game.id).vocabulary;
 
   const sentenceCount = data.sentences.length;
   const vocabularyCount = data.vocabulary.length;
@@ -1322,10 +1847,10 @@ function EdithFinchPage({
     <div className="page-stack study-page">
       <header className="page-header">
         <div className="study-title">
-          <img className="study-game-art" src={EDITH_FINCH_COVER} alt="" />
+          <GameCover game={game} className="study-game-art" />
           <div className="study-title-copy">
             <p className="eyebrow">공부 중 · {isGuestMode ? "게스트 모드" : getUserDisplayName(user)}</p>
-            <h1>What Remains of Edith Finch</h1>
+            <h1>{game.title}</h1>
           </div>
         </div>
         <div className="page-header-side">
@@ -1411,7 +1936,7 @@ function EdithFinchPage({
         </div>
       </section>
 
-      <GuideModal guide={edithFinchGuide} isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
+      <GuideModal guide={guide} isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
       <StatsModal stats={studyStats} isOpen={isStatsOpen} onClose={() => setIsStatsOpen(false)} />
       <StoryMemoDrawer
         storyMemo={data.storyMemo}
@@ -1422,11 +1947,18 @@ function EdithFinchPage({
       {isVocabularyDrawerOpen ? (
         <VocabularyEditorDrawer
           vocabulary={data.vocabulary}
+          defaultVocabulary={defaultVocabulary}
           onClose={() => setIsVocabularyDrawerOpen(false)}
           onSaveVocabulary={updateVocabularyFromText}
         />
       ) : null}
-      <FamilyTreeReference isOpen={isFamilyTreeOpen} onClose={() => setIsFamilyTreeOpen(false)} onOpen={() => setIsFamilyTreeOpen(true)} />
+      {isEdithFinch ? (
+        <FamilyTreeReference
+          isOpen={isFamilyTreeOpen}
+          onClose={() => setIsFamilyTreeOpen(false)}
+          onOpen={() => setIsFamilyTreeOpen(true)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -1533,7 +2065,7 @@ function VocabularyEntry({ entry }) {
   );
 }
 
-function VocabularyEditorDrawer({ vocabulary, onClose, onSaveVocabulary }) {
+function VocabularyEditorDrawer({ vocabulary, defaultVocabulary, onClose, onSaveVocabulary }) {
   const [draftText, setDraftText] = useState(() => formatVocabularyText(vocabulary));
 
   useEffect(() => {
@@ -1552,7 +2084,7 @@ function VocabularyEditorDrawer({ vocabulary, onClose, onSaveVocabulary }) {
   }
 
   function resetVocabularyText() {
-    setDraftText(formatVocabularyText(createDefaultVocabularyEntries()));
+    setDraftText(formatVocabularyText(defaultVocabulary));
   }
 
   return (
@@ -2007,17 +2539,5 @@ function GuideModal({ guide, isOpen, onClose }) {
         </div>
       </section>
     </div>
-  );
-}
-
-function ComingSoonPage({ game, onGoHome }) {
-  return (
-    <section className="panel">
-      <button className="button small secondary" type="button" onClick={onGoHome}>
-        홈
-      </button>
-      <h1>{game?.title || "선택한 게임"}</h1>
-      <p className="page-description">아직 준비 중입니다.</p>
-    </section>
   );
 }
