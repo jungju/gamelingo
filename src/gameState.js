@@ -445,11 +445,11 @@ export function normalizeVocabularyEntry(entry) {
   };
 }
 
-function formatVocabularyText(vocabulary) {
+export function formatVocabularyText(vocabulary) {
   return vocabulary.map((entry) => `${entry.word}: ${entry.meaning}`.trim()).join("\n");
 }
 
-function parseVocabularyText(vocabularyText, existingVocabulary = []) {
+export function parseVocabularyText(vocabularyText, existingVocabulary = []) {
   const existingEntriesByWord = existingVocabulary.reduce((entriesByWord, entry) => {
     const key = entry.word.toLowerCase();
     const entries = entriesByWord.get(key) || [];

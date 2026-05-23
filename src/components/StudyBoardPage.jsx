@@ -5,6 +5,7 @@ import {
   BookOpen,
   GripVertical,
   Languages,
+  PencilLine,
   Pin,
   Plus,
   Search,
@@ -15,15 +16,15 @@ import {
 import {
   createCharacterId,
   createId,
-  createVocabularyId,
   findVocabularyForSentence,
+  formatVocabularyText,
   getDefaultBoardPosition,
   getSentenceChapter,
   getSentenceSummary,
   getSentenceTitle,
   normalizeCharacter,
   normalizeSentence,
-  normalizeVocabularyEntry,
+  parseVocabularyText,
 } from "../gameState";
 import { getUserDisplayName } from "../ohmeshClient";
 import { SyncStatusBadge } from "./Shared";
@@ -42,7 +43,7 @@ export function StudyBoardPage({
   const [openedSentenceId, setOpenedSentenceId] = useState(null);
   const [isNewSentenceOpen, setIsNewSentenceOpen] = useState(false);
   const [openedCharacterId, setOpenedCharacterId] = useState(null);
-  const [wordForm, setWordForm] = useState({ open: false, mode: "add", word: null });
+  const [isVocabularyEditorOpen, setIsVocabularyEditorOpen] = useState(false);
   const [addCharacterOpen, setAddCharacterOpen] = useState(false);
 
   const openedSentence = data.sentences.find((sentence) => sentence.id === openedSentenceId) || null;
@@ -112,36 +113,12 @@ export function StudyBoardPage({
     });
   }
 
-  function saveVocabularyEntry(entryDraft) {
-    setData((previousData) => {
-      if (entryDraft.id) {
-        return {
-          ...previousData,
-          vocabulary: previousData.vocabulary.map((entry) =>
-            entry.id === entryDraft.id ? normalizeVocabularyEntry({ ...entry, ...entryDraft }) : entry
-          ).filter(Boolean),
-        };
-      }
-
-      const newEntry = normalizeVocabularyEntry({
-        ...entryDraft,
-        id: createVocabularyId(),
-      });
-
-      return {
-        ...previousData,
-        vocabulary: newEntry ? [newEntry, ...previousData.vocabulary] : previousData.vocabulary,
-      };
-    });
-    setWordForm({ open: false, mode: "add", word: null });
-  }
-
-  function deleteVocabularyEntry(entryId) {
+  function saveVocabularyText(vocabularyText) {
     setData((previousData) => ({
       ...previousData,
-      vocabulary: previousData.vocabulary.filter((entry) => entry.id !== entryId),
+      vocabulary: parseVocabularyText(vocabularyText, previousData.vocabulary),
     }));
-    setWordForm({ open: false, mode: "add", word: null });
+    setIsVocabularyEditorOpen(false);
   }
 
   function saveCharacter(characterDraft) {
@@ -205,10 +182,9 @@ export function StudyBoardPage({
         vocabulary={data.vocabulary}
         characters={data.characters}
         onAddCharacter={() => setAddCharacterOpen(true)}
-        onAddWord={() => setWordForm({ open: true, mode: "add", word: null })}
+        onEditVocabulary={() => setIsVocabularyEditorOpen(true)}
         onOpenCharacter={(character) => setOpenedCharacterId(character.id)}
         onOpenNote={(sentence) => setOpenedSentenceId(sentence.id)}
-        onOpenWord={(word) => setWordForm({ open: true, mode: "edit", word })}
         onMoveSentenceToIndex={moveSentenceToIndex}
       />
       {isNewSentenceOpen || openedSentence ? (
@@ -230,14 +206,11 @@ export function StudyBoardPage({
           onSaveCharacter={saveCharacter}
         />
       ) : null}
-      {wordForm.open ? (
-        <WordFormModal
-          key={wordForm.word?.id || "new-word"}
-          mode={wordForm.mode}
-          word={wordForm.word}
-          onClose={() => setWordForm({ open: false, mode: "add", word: null })}
-          onDeleteWord={deleteVocabularyEntry}
-          onSaveWord={saveVocabularyEntry}
+      {isVocabularyEditorOpen ? (
+        <VocabularyEditorModal
+          vocabulary={data.vocabulary}
+          onClose={() => setIsVocabularyEditorOpen(false)}
+          onSaveVocabulary={saveVocabularyText}
         />
       ) : null}
       {addCharacterOpen ? (
@@ -297,10 +270,9 @@ function Board({
   vocabulary,
   characters,
   onAddCharacter,
-  onAddWord,
+  onEditVocabulary,
   onOpenCharacter,
   onOpenNote,
-  onOpenWord,
   onMoveSentenceToIndex,
 }) {
   const [draggingSentenceId, setDraggingSentenceId] = useState(null);
@@ -358,7 +330,7 @@ function Board({
           ))}
         </div>
       )}
-      <WordBoardNote vocabulary={vocabulary} onAddWord={onAddWord} onOpenWord={onOpenWord} />
+      <WordBoardNote vocabulary={vocabulary} onEditVocabulary={onEditVocabulary} />
       <div className="character-strip">
         <div className="character-scroll">
           {characters.map((character) => (
@@ -429,7 +401,7 @@ function NoteCard({
   );
 }
 
-function WordBoardNote({ vocabulary, onAddWord, onOpenWord }) {
+function WordBoardNote({ vocabulary, onEditVocabulary }) {
   return (
     <motion.section
       initial={{ opacity: 0, scale: 0.96, y: 16 }}
@@ -443,8 +415,8 @@ function WordBoardNote({ vocabulary, onAddWord, onOpenWord }) {
           <h3 className="word-title">영단어</h3>
           <span className="count-badge">{vocabulary.length}개</span>
         </div>
-        <button onClick={onAddWord} className="small-button" title="추가" type="button">
-          <Plus className="h-3.5 w-3.5" />추가
+        <button onClick={onEditVocabulary} className="small-button" title="영단어 수정" type="button">
+          <PencilLine className="h-3.5 w-3.5" />수정
         </button>
       </div>
 
@@ -455,7 +427,7 @@ function WordBoardNote({ vocabulary, onAddWord, onOpenWord }) {
           vocabulary.map((entry) => (
             <button
               key={entry.id}
-              onClick={() => onOpenWord(entry)}
+              onClick={onEditVocabulary}
               className="word-item"
               type="button"
             >
@@ -714,23 +686,11 @@ function createCharacterDraft(character) {
   };
 }
 
-function WordFormModal({ mode, word, onClose, onDeleteWord, onSaveWord }) {
-  const [draft, setDraft] = useState(createWordDraft(word));
-  const isEdit = mode === "edit";
-
-  function updateDraft(field, value) {
-    setDraft((previousDraft) => ({ ...previousDraft, [field]: value }));
-  }
+function VocabularyEditorModal({ vocabulary, onClose, onSaveVocabulary }) {
+  const [text, setText] = useState(() => formatVocabularyText(vocabulary));
 
   function saveDraft() {
-    const wordText = draft.word.trim();
-    if (!wordText) return;
-
-    onSaveWord({
-      ...draft,
-      word: wordText,
-      meaning: draft.meaning.trim(),
-    });
+    onSaveVocabulary(text);
   }
 
   return (
@@ -745,68 +705,40 @@ function WordFormModal({ mode, word, onClose, onDeleteWord, onSaveWord }) {
           initial={{ opacity: 0, scale: 0.96, y: 16 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 16 }}
-          className="w-full max-w-md rounded-[2rem] border border-emerald-900/40 bg-emerald-50 p-5 text-stone-900 shadow-2xl"
+          className="w-full max-w-2xl rounded-[2rem] border border-emerald-900/40 bg-emerald-50 p-5 text-stone-900 shadow-2xl"
         >
           <div className="mb-5 flex items-start justify-between gap-4">
             <div>
               <p className="mb-1 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-emerald-800/60">
                 <Languages className="h-4 w-4" />Vocabulary
               </p>
-              <h2 className="text-2xl font-black">{isEdit ? "영단어 수정" : "영단어 추가"}</h2>
+              <h2 className="text-2xl font-black">영단어 수정</h2>
             </div>
             <button onClick={onClose} className="rounded-2xl bg-black/10 p-3 hover:bg-black/15" type="button">
               <X className="h-5 w-5" />
             </button>
           </div>
 
-          <div className="space-y-3">
-            <label className="block">
-              <span className="mb-1 block text-xs font-black text-stone-500">영단어</span>
-              <input
-                value={draft.word}
-                onChange={(event) => updateDraft("word", event.target.value)}
-                className="w-full rounded-2xl border border-emerald-900/20 bg-white/70 px-4 py-3 text-sm font-bold outline-none focus:border-emerald-700"
-                placeholder="example: discover"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-xs font-black text-stone-500">한글 뜻</span>
-              <input
-                value={draft.meaning}
-                onChange={(event) => updateDraft("meaning", event.target.value)}
-                className="w-full rounded-2xl border border-emerald-900/20 bg-white/70 px-4 py-3 text-sm font-bold outline-none focus:border-emerald-700"
-                placeholder="example: 발견하다"
-              />
-            </label>
-          </div>
+          <label className="block">
+            <span className="mb-1 block text-xs font-black text-stone-500">영단어 목록</span>
+            <textarea
+              value={text}
+              onChange={(event) => setText(event.target.value)}
+              className="h-80 w-full resize-none rounded-2xl border border-emerald-900/20 bg-white/70 px-4 py-3 font-mono text-sm leading-6 outline-none focus:border-emerald-700"
+              placeholder={"alive: 살아 있는\nattic: 다락방\nmemory: 기억"}
+            />
+          </label>
 
-          <div className="mt-5 flex items-center justify-between gap-2">
-            {isEdit ? (
-              <button onClick={() => onDeleteWord(word.id)} className="rounded-2xl border border-red-900/20 bg-red-100 px-4 py-3 text-sm font-black text-red-700 hover:bg-red-200" type="button">
-                삭제
-              </button>
-            ) : (
-              <span />
-            )}
-            <div className="flex gap-2">
-              <button onClick={onClose} className="rounded-2xl px-4 py-3 text-sm font-black text-stone-500 hover:bg-black/10" type="button">취소</button>
-              <button onClick={saveDraft} className="rounded-2xl bg-stone-950 px-5 py-3 text-sm font-black text-white hover:bg-stone-800" type="button">
-                {isEdit ? "저장" : "추가"}
-              </button>
-            </div>
+          <div className="mt-5 flex justify-end gap-2">
+            <button onClick={onClose} className="rounded-2xl px-4 py-3 text-sm font-black text-stone-500 hover:bg-black/10" type="button">취소</button>
+            <button onClick={saveDraft} className="rounded-2xl bg-stone-950 px-5 py-3 text-sm font-black text-white hover:bg-stone-800" type="button">
+              저장
+            </button>
           </div>
         </motion.div>
       </motion.div>
     </AnimatePresence>
   );
-}
-
-function createWordDraft(word) {
-  return {
-    id: word?.id || "",
-    word: word?.word || "",
-    meaning: word?.meaning || "",
-  };
 }
 
 function AddCharacterModal({ onClose, onSaveCharacter }) {

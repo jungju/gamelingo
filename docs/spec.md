@@ -61,7 +61,13 @@ panel, and a bottom character rail.
   required English original text and optional Korean/meaning text.
 - The note modal can hide or show the Korean/meaning field and can delete an
   existing sentence.
-- The right `영단어` panel supports vocabulary add, edit, and delete.
+- The right `영단어` panel uses a `수정` button for whole-vocabulary editing.
+- The vocabulary editor is a multiline text area. Each non-empty line is parsed
+  as `{english}: {translation}`.
+- Saving vocabulary text replaces the displayed vocabulary with parsed entries
+  in line order.
+- Existing vocabulary ids are preserved for matching English words. Deleting a
+  line deletes that vocabulary entry.
 - The bottom character rail supports character add, edit, and delete. The add
   button text is `등장인물 추가`.
 - Guest mode shows `로그인`, not browser-save wording.
