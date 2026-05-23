@@ -1593,7 +1593,7 @@ function AccountSummary({ syncState, user, isGuestMode, onLogout, onSaveToOhmesh
 
 function SyncStatusBadge({ syncState }) {
   return (
-    <span className="mt-2 inline-flex rounded-full border border-stone-700 bg-stone-950 px-2.5 py-1 text-xs font-black text-stone-400" title={syncState.message}>
+    <span className="sync-status-badge" title={syncState.message}>
       {getSyncStatusLabel(syncState)}
     </span>
   );
@@ -1835,7 +1835,7 @@ function StudyBoardPage({
   }
 
   return (
-    <div className="min-h-screen bg-stone-950 font-sans text-stone-100">
+    <div className="study-template app">
       <StudyHeader
         game={game}
         syncState={syncState}
@@ -1851,20 +1851,18 @@ function StudyBoardPage({
           {syncState.message || "ohmesh 저장에 실패했습니다. 다시 수정하면 저장을 재시도합니다."}
         </div>
       ) : null}
-      <div className="flex h-[calc(100vh-76px)] min-w-0">
-        <Board
-          boardRef={boardRef}
-          sentences={data.sentences}
-          vocabulary={data.vocabulary}
-          characters={data.characters}
-          onAddCharacter={() => setAddCharacterOpen(true)}
-          onAddWord={() => setWordForm({ open: true, mode: "add", word: null })}
-          onMoveSentence={moveSentence}
-          onOpenCharacter={(character) => setOpenedCharacterId(character.id)}
-          onOpenNote={(sentence) => setOpenedSentenceId(sentence.id)}
-          onOpenWord={(word) => setWordForm({ open: true, mode: "edit", word })}
-        />
-      </div>
+      <Board
+        boardRef={boardRef}
+        sentences={data.sentences}
+        vocabulary={data.vocabulary}
+        characters={data.characters}
+        onAddCharacter={() => setAddCharacterOpen(true)}
+        onAddWord={() => setWordForm({ open: true, mode: "add", word: null })}
+        onMoveSentence={moveSentence}
+        onOpenCharacter={(character) => setOpenedCharacterId(character.id)}
+        onOpenNote={(sentence) => setOpenedSentenceId(sentence.id)}
+        onOpenWord={(word) => setWordForm({ open: true, mode: "edit", word })}
+      />
       {isNewSentenceOpen || openedSentence ? (
         <SentenceBoardModal
           key={isNewSentenceOpen ? "new-sentence" : openedSentence.id}
@@ -1912,34 +1910,32 @@ function StudyHeader({
   onSaveToOhmesh,
 }) {
   return (
-    <header className="relative z-20 flex h-[76px] items-center justify-between border-b border-stone-800 bg-stone-950/90 px-6 text-stone-100 backdrop-blur">
-      <div className="flex min-w-0 items-center gap-3">
+    <header className="header">
+      <div className="header-left">
         <button
           onClick={onBackToGames}
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-stone-800 bg-stone-900 text-stone-300 hover:bg-stone-800 hover:text-white"
+          className="back-button"
           title="게임 선택으로 이동"
           type="button"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <div className="min-w-0">
-          <p className="truncate text-2xl font-black tracking-tight">{game.title}</p>
-          <p className="text-xs text-stone-500">공부 중 · {isGuestMode ? "게스트 모드" : getUserDisplayName(user)}</p>
-        </div>
+        <h1 className="game-title">{game.title}</h1>
       </div>
-      <div className="flex items-center gap-2">
-        <div className="hidden items-center gap-2 rounded-2xl border border-stone-800 bg-stone-900 px-3 py-2 text-sm text-stone-500 lg:flex">
+      <div className="header-right">
+        <div className="search-box">
           <Search className="h-4 w-4" />
           <span>문장 / 영단어 / 등장인물 검색</span>
         </div>
         <SyncStatusBadge syncState={syncState} />
-        <button onClick={onAddNote} className="flex items-center gap-2 rounded-2xl bg-stone-100 px-4 py-3 text-sm font-bold text-stone-950 shadow-sm hover:bg-white" type="button">
+        <button onClick={onAddNote} className="primary-button" type="button">
           <Plus className="h-4 w-4" />노트 추가
         </button>
         <button
-          className={isGuestMode ? "rounded-2xl bg-amber-200 px-4 py-3 text-sm font-black text-stone-950" : "rounded-2xl border border-stone-800 bg-stone-900 px-4 py-3 text-sm font-black text-stone-300"}
+          className={isGuestMode ? "primary-button primary-button--warm" : "small-button"}
           type="button"
           onClick={isGuestMode ? onSaveToOhmesh : onLogout}
+          title={isGuestMode ? "ohmesh에 저장" : getUserDisplayName(user)}
         >
           {isGuestMode ? "저장하기" : "로그아웃"}
         </button>
@@ -1971,15 +1967,13 @@ function Board({
   };
 
   return (
-    <main ref={boardRef} className="relative flex-1 overflow-hidden bg-stone-900">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(245,158,11,0.18),transparent_28%),radial-gradient(circle_at_80%_60%,rgba(120,113,108,0.22),transparent_30%)]" />
-      <div className="absolute inset-5 rounded-[2rem] border border-amber-950/50 bg-[linear-gradient(90deg,rgba(120,53,15,.18)_1px,transparent_1px),linear-gradient(rgba(120,53,15,.18)_1px,transparent_1px)] bg-[size:32px_32px] shadow-2xl" />
-
-      <div className="relative z-10 h-[calc(100vh-76px)]">
+    <main ref={boardRef} className="board">
+      <div className="board-grid" />
+      <div id="noteLayer">
         {sentences.length === 0 ? (
-          <div className="absolute left-8 top-8 max-w-md rounded-3xl border border-dashed border-amber-900/50 bg-stone-950/70 p-6 text-stone-400">
-            <p className="text-lg font-black text-stone-100">아직 보드 노트가 없습니다.</p>
-            <p className="mt-2 leading-7">상단의 노트 추가를 눌러 게임에서 발견한 영어 문장을 붙여보세요.</p>
+          <div className="empty-board-note">
+            <p>아직 보드 노트가 없습니다.</p>
+            <span>상단의 노트 추가를 눌러 게임에서 발견한 영어 문장을 붙여보세요.</span>
           </div>
         ) : null}
         {sentences.map((sentence, index) => (
@@ -1995,16 +1989,16 @@ function Board({
             onFocus={bringNoteToFront}
           />
         ))}
-        <WordBoardNote vocabulary={vocabulary} onAddWord={onAddWord} onOpenWord={onOpenWord} />
-        <div className="absolute bottom-5 left-6 right-6">
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {characters.map((character) => (
-              <CharacterCard key={character.id} character={character} onOpen={onOpenCharacter} />
-            ))}
-            <button onClick={onAddCharacter} className="flex w-24 shrink-0 items-center justify-center gap-1 rounded-2xl border border-dashed border-slate-700/70 bg-transparent px-3 py-2 text-xs font-bold text-slate-400 hover:bg-slate-900/50" type="button">
-              <Plus className="h-3.5 w-3.5" />추가
-            </button>
-          </div>
+      </div>
+      <WordBoardNote vocabulary={vocabulary} onAddWord={onAddWord} onOpenWord={onOpenWord} />
+      <div className="character-strip">
+        <div className="character-scroll">
+          {characters.map((character) => (
+            <CharacterCard key={character.id} character={character} onOpen={onOpenCharacter} />
+          ))}
+          <button onClick={onAddCharacter} className="add-character-button" type="button">
+            <Plus className="h-3.5 w-3.5" />추가
+          </button>
         </div>
       </div>
     </main>
@@ -2039,7 +2033,7 @@ function NoteCard({ boardRef, sentence, sentenceIndex, vocabulary, onMove, onOpe
         finishDrag(info);
       }}
       onPointerDown={() => onFocus(sentence.id)}
-      className="absolute w-64 rounded-2xl border border-amber-900/40 bg-amber-100/95 p-4 text-left text-stone-900 shadow-2xl hover:bg-amber-50"
+      className="note-card"
       style={{ left: `${sentence.x}%`, top: `${sentence.y}%`, zIndex }}
     >
       <button
@@ -2048,28 +2042,23 @@ function NoteCard({ boardRef, sentence, sentenceIndex, vocabulary, onMove, onOpe
           onFocus(sentence.id);
           dragControls.start(event);
         }}
-        className="absolute right-2 top-2 grid h-8 w-8 cursor-grab place-items-center rounded-xl bg-black/10 text-stone-600 hover:bg-black/15 active:cursor-grabbing"
+        className="drag-handle"
         title="노트 이동"
         type="button"
       >
         <GripVertical className="h-4 w-4" />
       </button>
 
-      <button onClick={() => onOpen(sentence)} className="block w-full pr-8 text-left" type="button">
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <Pin className="h-4 w-4 shrink-0" />
-            <span className="truncate text-[11px] font-black uppercase tracking-wider opacity-60">
-              {getSentenceChapter(sentence, sentenceIndex)}
-            </span>
-          </div>
-          <StickyNote className="h-4 w-4 opacity-60" />
+      <button onClick={() => onOpen(sentence)} className="note-body-button" type="button">
+        <div className="note-meta">
+          <Pin className="h-4 w-4" />
+          {getSentenceChapter(sentence, sentenceIndex)}
         </div>
-        <h3 className="text-base font-black leading-tight">{getSentenceTitle(sentence)}</h3>
-        <p className="mt-2 line-clamp-3 text-xs leading-relaxed opacity-75">{getSentenceSummary(sentence)}</p>
-        <div className="mt-4 flex flex-wrap gap-1.5">
+        <h3 className="note-title">{getSentenceTitle(sentence)}</h3>
+        <p className="note-summary">{getSentenceSummary(sentence)}</p>
+        <div className="note-words">
           {words.slice(0, 3).map((entry) => (
-            <span key={entry.id} className="rounded-full bg-black/10 px-2 py-1 text-[10px] font-black">
+            <span key={entry.id} className="tag">
               {entry.word}: {entry.meaning}
             </span>
           ))}
@@ -2085,33 +2074,33 @@ function WordBoardNote({ vocabulary, onAddWord, onOpenWord }) {
       initial={{ opacity: 0, scale: 0.96, y: 16 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       whileHover={{ y: -3 }}
-      className="absolute bottom-5 right-8 top-10 z-[60] flex w-[360px] flex-col rounded-3xl border border-stone-700 bg-stone-950/95 p-4 text-stone-100 shadow-2xl backdrop-blur"
+      className="word-panel"
     >
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
-          <Pin className="h-4 w-4 shrink-0 text-stone-500" />
-          <h3 className="text-lg font-black leading-tight text-stone-100">영단어</h3>
-          <span className="rounded-full bg-stone-800 px-2 py-1 text-[11px] font-black text-stone-400">{vocabulary.length}개</span>
+      <div className="word-panel-header">
+        <div className="word-title-wrap">
+          <Pin className="h-4 w-4 text-stone-500" />
+          <h3 className="word-title">영단어</h3>
+          <span className="count-badge">{vocabulary.length}개</span>
         </div>
-        <button onClick={onAddWord} className="flex items-center gap-1 rounded-xl bg-stone-800 px-2 py-1.5 text-[11px] font-black text-stone-300 hover:bg-stone-700" title="추가" type="button">
+        <button onClick={onAddWord} className="small-button" title="추가" type="button">
           <Plus className="h-3.5 w-3.5" />추가
         </button>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-2 content-start gap-1.5 overflow-y-auto pr-1">
+      <div className="word-list">
         {vocabulary.length === 0 ? (
-          <p className="col-span-2 rounded-2xl border border-dashed border-stone-800 p-4 text-sm text-stone-500">저장한 단어가 없습니다.</p>
+          <p className="empty-word-list">저장한 단어가 없습니다.</p>
         ) : (
           vocabulary.map((entry) => (
             <button
               key={entry.id}
               onClick={() => onOpenWord(entry)}
-              className="rounded-xl border border-stone-800 bg-stone-900 px-2 py-1.5 text-left hover:bg-stone-800 hover:shadow-sm"
+              className="word-item"
               type="button"
             >
-              <div className="flex items-baseline justify-between gap-2">
-                <p className="truncate text-xs font-black text-stone-100">{entry.word}</p>
-                <p className="shrink-0 text-[11px] text-stone-400">{entry.meaning}</p>
+              <div className="word-row">
+                <span className="word-en">{entry.word}</span>
+                <span className="word-ko">{entry.meaning}</span>
               </div>
             </button>
           ))
@@ -2128,16 +2117,16 @@ function CharacterCard({ character, onOpen }) {
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -2 }}
       onClick={() => onOpen(character)}
-      className="w-36 shrink-0 rounded-2xl border border-slate-700/70 bg-slate-950/75 p-2 text-left text-stone-100 shadow-lg backdrop-blur hover:bg-slate-900/90"
+      className="character-card"
       type="button"
     >
-      <div className="flex items-center gap-2">
-        <div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl border border-slate-700 bg-slate-800 text-slate-400">
+      <div className="character-inner">
+        <div className="avatar">
           <UserRound className="h-5 w-5" />
         </div>
-        <div className="min-w-0">
-          <p className="truncate text-xs font-black">{character.name}</p>
-          <p className="mt-0.5 truncate text-[10px] text-slate-500">{character.description || "인물 메모"}</p>
+        <div className="character-info">
+          <p className="character-name">{character.name}</p>
+          <p className="character-role">{character.description || "인물 메모"}</p>
         </div>
       </div>
     </motion.button>
@@ -2146,6 +2135,7 @@ function CharacterCard({ character, onOpen }) {
 
 function SentenceBoardModal({ sentence, vocabulary, onClose, onDeleteSentence, onSaveSentence }) {
   const [draft, setDraft] = useState(createSentenceDraft(sentence));
+  const [showKorean, setShowKorean] = useState(true);
   const isEdit = Boolean(sentence);
 
   function updateDraft(field, value) {
@@ -2169,100 +2159,84 @@ function SentenceBoardModal({ sentence, vocabulary, onClose, onDeleteSentence, o
   return (
     <AnimatePresence>
       <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed bottom-0 left-0 right-[400px] top-0 z-40 bg-black/70 p-6 backdrop-blur-sm"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="overlay"
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.96, y: 20 }}
+          className="modal"
         >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 20 }}
-            className="flex h-full w-full flex-col overflow-hidden rounded-[2rem] border border-stone-700 bg-stone-950 text-stone-100 shadow-2xl"
-          >
-            <div className="flex h-14 items-center justify-between gap-4 border-b border-stone-800 px-5">
-              <div className="flex items-center gap-2 text-lg font-black tracking-tight">
-                <BookOpen className="h-5 w-5 text-amber-200/70" />노트
-              </div>
-              <button onClick={onClose} className="rounded-2xl border border-stone-800 bg-stone-900 p-2.5 hover:bg-stone-800" type="button">
+          <div className="modal-header">
+            <div className="modal-title">
+              <BookOpen className="h-5 w-5 text-amber-200/70" />노트
+            </div>
+            <div className="modal-actions">
+              <button className="toggle-button" type="button" onClick={() => setShowKorean((previous) => !previous)}>
+                <span>{showKorean ? "◑" : "◐"}</span>
+                <span>{showKorean ? "한글 숨기기" : "한글 보기"}</span>
+              </button>
+              <button onClick={onClose} className="icon-button" type="button">
                 <X className="h-5 w-5" />
               </button>
             </div>
+          </div>
 
-            <div className="grid min-h-0 flex-1 grid-cols-[1.25fr_0.85fr] gap-4 overflow-hidden p-4">
-              <section className="grid min-h-0 gap-3 rounded-2xl border border-stone-800 bg-stone-900 p-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <label className="grid gap-1.5">
-                    <span className="text-xs font-black text-stone-500">제목</span>
-                    <input className="rounded-xl border border-stone-800 bg-stone-950 px-3 py-2 text-sm font-bold outline-none focus:border-amber-700" value={draft.title} onChange={(event) => updateDraft("title", event.target.value)} placeholder="Old man and the sap" />
-                  </label>
-                  <label className="grid gap-1.5">
-                    <span className="text-xs font-black text-stone-500">챕터 / 장면</span>
-                    <input className="rounded-xl border border-stone-800 bg-stone-950 px-3 py-2 text-sm font-bold outline-none focus:border-amber-700" value={draft.chapter} onChange={(event) => updateDraft("chapter", event.target.value)} placeholder="Opening Scene" />
-                  </label>
-                </div>
-
-                <label className="flex min-h-0 flex-col gap-1.5">
-                  <span className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-stone-500">
-                    <StickyNote className="h-4 w-4" />English
-                  </span>
-                  <textarea
-                    value={draft.original}
-                    onChange={(event) => updateDraft("original", event.target.value)}
-                    className="min-h-0 flex-1 resize-none rounded-xl border border-stone-800 bg-stone-950 px-4 py-3 text-lg leading-8 text-stone-100 outline-none focus:border-amber-700"
-                    placeholder="게임에서 발견한 영어 문장을 적습니다."
-                  />
-                </label>
-              </section>
-
-              <aside className="grid min-h-0 gap-3">
-                <label className="flex min-h-0 flex-col gap-1.5 rounded-2xl border border-stone-800 bg-stone-900 p-3">
-                  <span className="text-xs font-black uppercase tracking-wider text-stone-500">한글 / 해석</span>
-                  <textarea
-                    value={draft.meaning}
-                    onChange={(event) => updateDraft("meaning", event.target.value)}
-                    className="min-h-0 flex-1 resize-none rounded-xl border border-stone-800 bg-stone-950 px-4 py-3 text-base leading-7 text-stone-200 outline-none focus:border-amber-700"
-                    placeholder="번역, 해석 설명, 문맥 설명을 적습니다."
-                  />
-                </label>
-                <label className="flex min-h-0 flex-col gap-1.5 rounded-2xl border border-stone-800 bg-stone-900 p-3">
-                  <span className="text-xs font-black uppercase tracking-wider text-stone-500">내 문장</span>
-                  <textarea
-                    value={draft.mySentence}
-                    onChange={(event) => updateDraft("mySentence", event.target.value)}
-                    className="min-h-0 flex-1 resize-none rounded-xl border border-stone-800 bg-stone-950 px-4 py-3 text-base leading-7 text-stone-200 outline-none focus:border-amber-700"
-                    placeholder="게임 문장을 내 상황에 맞게 바꿔 적습니다."
-                  />
-                </label>
-                <div className="rounded-2xl border border-stone-800 bg-stone-900 p-3">
-                  <p className="mb-2 text-xs font-black uppercase tracking-wider text-stone-500">연결 단어</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {findVocabularyForSentence(draft, vocabulary).map((entry) => (
-                      <span key={entry.id} className="rounded-full bg-stone-800 px-2 py-1 text-xs font-bold text-stone-300">
-                        {entry.word}: {entry.meaning}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </aside>
-            </div>
-
-            <div className="flex justify-between gap-2 border-t border-stone-800 p-4">
-              {isEdit ? (
-                <button onClick={() => onDeleteSentence(sentence.id)} className="rounded-2xl border border-red-950/60 bg-red-950/30 px-5 py-3 text-sm font-black text-red-300 hover:bg-red-950/50" type="button">
-                  삭제
-                </button>
-              ) : (
-                <span />
-              )}
-              <div className="flex gap-2">
-                <button onClick={onClose} className="rounded-2xl border border-stone-800 bg-stone-900 px-5 py-3 text-sm font-black text-stone-400 hover:bg-stone-800" type="button">
-                  취소
-                </button>
-                <button onClick={saveDraft} className="rounded-2xl bg-stone-100 px-6 py-3 text-sm font-black text-stone-950 hover:bg-white" type="button">
-                  저장
-                </button>
+          <div className={showKorean ? "note-editor" : "note-editor only-english"}>
+            <section className="editor-section">
+              <div className="field-label">
+                <StickyNote className="h-4 w-4" />English
               </div>
+              <textarea
+                value={draft.original}
+                onChange={(event) => updateDraft("original", event.target.value)}
+                className="editor-textarea english-textarea"
+                placeholder="게임에서 발견한 영어 문장을 적습니다."
+              />
+            </section>
+
+            {showKorean ? (
+              <section className="editor-section">
+                <div className="field-label">
+                  <Languages className="h-4 w-4" />한글 / 해석
+                </div>
+                <textarea
+                  value={draft.meaning}
+                  onChange={(event) => updateDraft("meaning", event.target.value)}
+                  className="editor-textarea korean-textarea"
+                  placeholder="번역, 해석 설명, 문맥 설명을 적습니다."
+                />
+              </section>
+            ) : null}
+          </div>
+
+          <div className="linked-word-row">
+            {findVocabularyForSentence(draft, vocabulary).map((entry) => (
+              <span key={entry.id} className="tag">
+                {entry.word}: {entry.meaning}
+              </span>
+            ))}
+          </div>
+
+          <div className="modal-footer">
+            {isEdit ? (
+              <button onClick={() => onDeleteSentence(sentence.id)} className="danger-button" type="button">
+                삭제
+              </button>
+            ) : (
+              <span />
+            )}
+            <div className="footer-right">
+              <button onClick={onClose} className="secondary-button" type="button">
+                취소
+              </button>
+              <button onClick={saveDraft} className="save-button" type="button">
+                저장
+              </button>
+            </div>
             </div>
           </motion.div>
       </motion.div>
