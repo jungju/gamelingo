@@ -355,8 +355,8 @@ function NoteCard({ boardRef, sentence, sentenceIndex, vocabulary, onMove, onOpe
     const boardRect = boardRef.current?.getBoundingClientRect();
     if (!boardRect) return;
 
-    const x = ((info.point.x - boardRect.left) / boardRect.width) * 100;
-    const y = ((info.point.y - boardRect.top) / boardRect.height) * 100;
+    const x = sentence.x + (info.offset.x / boardRect.width) * 100;
+    const y = sentence.y + (info.offset.y / boardRect.height) * 100;
     onMove(sentence.id, x, y);
   }
 
@@ -369,7 +369,7 @@ function NoteCard({ boardRef, sentence, sentenceIndex, vocabulary, onMove, onOpe
       initial={{ opacity: 0, scale: 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
       whileHover={{ rotate: -0.5 }}
-      whileDrag={{ scale: 1.03, rotate: 1 }}
+      whileDrag={{ scale: 1 }}
       onDragEnd={(event, info) => {
         event.stopPropagation();
         finishDrag(info);
