@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
   BookOpen,
+  Clock,
   GripVertical,
   Languages,
   PencilLine,
@@ -17,7 +18,7 @@ import {
   createCharacterId,
   createId,
   formatVocabularyText,
-  getSentenceChapter,
+  getSentenceCreatedAtLabel,
   getSentenceSummary,
   getSentenceTitle,
   normalizeCharacter,
@@ -76,12 +77,16 @@ export function StudyBoardPage({
   }
 
   function saveSentence(sentenceDraft) {
+    const timestamp = new Date().toISOString();
+
     setData((previousData) => {
       if (sentenceDraft.id) {
         return {
           ...previousData,
           sentences: previousData.sentences.map((sentence) =>
-            sentence.id === sentenceDraft.id ? normalizeSentence({ ...sentence, ...sentenceDraft }) : sentence
+            sentence.id === sentenceDraft.id
+              ? normalizeSentence({ ...sentence, ...sentenceDraft, updatedAt: timestamp })
+              : sentence
           ),
         };
       }
@@ -89,6 +94,8 @@ export function StudyBoardPage({
       const newSentence = normalizeSentence({
         ...sentenceDraft,
         id: createId("sentence"),
+        createdAt: timestamp,
+        updatedAt: timestamp,
         practiced: false,
       });
 
@@ -392,8 +399,8 @@ function NoteCard({
 
       <button onClick={() => onOpen(sentence)} className="note-body-button" type="button">
         <div className="note-meta">
-          <Pin className="h-4 w-4" />
-          {getSentenceChapter(sentence, sentenceIndex)}
+          <Clock className="h-4 w-4" />
+          {getSentenceCreatedAtLabel(sentence, sentenceIndex)}
         </div>
         <h3 className="note-title">{getSentenceTitle(sentence)}</h3>
         <p className="note-summary">{getSentenceSummary(sentence)}</p>
@@ -568,6 +575,8 @@ function createSentenceDraft(sentence) {
     original: sentence?.original || "",
     meaning: sentence?.meaning || "",
     mySentence: sentence?.mySentence || "",
+    createdAt: sentence?.createdAt || "",
+    updatedAt: sentence?.updatedAt || "",
     practiced: sentence?.practiced || false,
   };
 }

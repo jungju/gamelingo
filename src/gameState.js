@@ -238,6 +238,8 @@ function normalizeCompactSentence(sentence) {
         meaning: sentence[1] || "",
         mySentence: sentence[2] || "",
         practiced: Boolean(sentence[3]),
+        createdAt: sentence[4],
+        updatedAt: sentence[5],
       }
     );
   }
@@ -251,6 +253,8 @@ function normalizeCompactSentence(sentence) {
       meaning: sentence?.k || sentence?.meaning,
       mySentence: sentence?.r || sentence?.mySentence,
       practiced: sentence?.p || sentence?.practiced,
+      createdAt: sentence?.a || sentence?.createdAt,
+      updatedAt: sentence?.u || sentence?.updatedAt,
     }
   );
 }
@@ -360,6 +364,8 @@ function serializeSentence(sentence) {
   if (sentence.meaning) compactSentence.k = sentence.meaning;
   if (sentence.mySentence) compactSentence.r = sentence.mySentence;
   if (sentence.practiced) compactSentence.p = 1;
+  if (sentence.createdAt) compactSentence.a = sentence.createdAt;
+  if (sentence.updatedAt && sentence.updatedAt !== sentence.createdAt) compactSentence.u = sentence.updatedAt;
 
   return compactSentence;
 }
@@ -388,7 +394,9 @@ function areSentencesEquivalent(sentences, referenceSentences) {
       sentence?.original === referenceSentence.original &&
       sentence?.meaning === referenceSentence.meaning &&
       sentence?.mySentence === referenceSentence.mySentence &&
-      Boolean(sentence?.practiced) === Boolean(referenceSentence.practiced)
+      Boolean(sentence?.practiced) === Boolean(referenceSentence.practiced) &&
+      sentence?.createdAt === referenceSentence.createdAt &&
+      sentence?.updatedAt === referenceSentence.updatedAt
     );
   });
 }
@@ -501,6 +509,10 @@ export function normalizeSentence(sentence) {
   const original = sentence.original.trim();
   if (!original) return null;
 
+  const timestamp = new Date().toISOString();
+  const createdAt = normalizeTimestamp(sentence.createdAt, timestamp);
+  const updatedAt = normalizeTimestamp(sentence.updatedAt, createdAt);
+
   return {
     id: sentence.id || createId("sentence"),
     title: typeof sentence.title === "string" ? sentence.title : "",
@@ -509,7 +521,16 @@ export function normalizeSentence(sentence) {
     meaning: typeof sentence.meaning === "string" ? sentence.meaning : "",
     mySentence: typeof sentence.mySentence === "string" ? sentence.mySentence : "",
     practiced: Boolean(sentence.practiced),
+    createdAt,
+    updatedAt,
   };
+}
+
+function normalizeTimestamp(value, fallback) {
+  if (typeof value !== "string") return fallback;
+
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? value : fallback;
 }
 
 export function normalizeCharacter(character) {
@@ -569,11 +590,22 @@ export function getGameAccentColor(gameId) {
 }
 
 export function getSentenceTitle(sentence) {
-  return sentence.title || sentence.original.split(/\s+/).slice(0, 5).join(" ");
+  return sentence.title || sentence.original;
 }
 
-export function getSentenceChapter(sentence, index) {
-  return sentence.chapter || `Note ${index + 1}`;
+export function getSentenceCreatedAtLabel(sentence) {
+  const date = new Date(sentence.createdAt || sentence.updatedAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return "새 노트";
+  }
+
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+
+  return `${month}.${day} ${hours}:${minutes}`;
 }
 
 export function getSentenceSummary(sentence) {

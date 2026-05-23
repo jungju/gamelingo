@@ -13,6 +13,7 @@ export const EDITH_FINCH_ID = "edith-finch";
 export const HOME_PATH = "/";
 
 const EDITH_FINCH_COVER = "/edith-finch-cover.png";
+const SAMPLE_CREATED_AT = "2026-05-23T00:00:00.000Z";
 
 export const defaultGames = [
   {
@@ -43,6 +44,8 @@ export const sampleSentences = [
     meaning: "나는 기억한다.",
     mySentence: "I remember my first day at work.",
     practiced: false,
+    createdAt: SAMPLE_CREATED_AT,
+    updatedAt: SAMPLE_CREATED_AT,
   },
   {
     id: "sample-2",
@@ -52,6 +55,8 @@ export const sampleSentences = [
     meaning: "나는 두려웠다.",
     mySentence: "I was nervous before the meeting.",
     practiced: false,
+    createdAt: SAMPLE_CREATED_AT,
+    updatedAt: SAMPLE_CREATED_AT,
   },
   {
     id: "sample-3",
@@ -61,6 +66,8 @@ export const sampleSentences = [
     meaning: "나는 그것을 설명할 수 없었다.",
     mySentence: "I couldn't explain my idea clearly.",
     practiced: false,
+    createdAt: SAMPLE_CREATED_AT,
+    updatedAt: SAMPLE_CREATED_AT,
   },
 ];
 
