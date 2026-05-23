@@ -339,7 +339,7 @@ function Board({
             <CharacterCard key={character.id} character={character} onOpen={onOpenCharacter} />
           ))}
           <button onClick={onAddCharacter} className="add-character-button" type="button">
-            <Plus className="h-3.5 w-3.5" />추가
+            <Plus className="h-3.5 w-3.5" />등장인물 추가
           </button>
         </div>
       </div>
