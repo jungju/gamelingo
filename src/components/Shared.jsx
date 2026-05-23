@@ -2,6 +2,8 @@ import { getGameAccentColor, getGameCoverLabel } from "../gameState";
 import { getSyncStatusLabel } from "../ohmeshClient";
 
 export function SyncStatusBadge({ syncState }) {
+  if (syncState.status === "local") return null;
+
   return (
     <span className="sync-status-badge" title={syncState.message}>
       {getSyncStatusLabel(syncState)}

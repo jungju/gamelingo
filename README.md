@@ -40,7 +40,7 @@ npm run build
 
 1. 홈 화면에서 기본 게임을 고르거나 `게임 추가`로 개인 게임을 만듭니다.
 2. 로그인 전에는 게스트 모드로 이 브라우저에만 저장됩니다.
-3. 상단의 `저장하기`를 누르면 ohmesh로 로그인하고 현재 브라우저 노트를 계정에 저장합니다.
+3. 상단의 `로그인`을 누르면 ohmesh로 로그인하고 현재 브라우저 노트를 계정에 저장합니다.
 4. 게임별 공부 페이지는 `/games/edith-finch`나 `/games/custom-game-...`처럼 고유 URL을 가집니다.
 5. 커스텀 게임은 홈 화면에서 제목과 설명을 수정하거나 확인 후 삭제할 수 있습니다.
 6. 공부 화면은 `prototype/template1.jsx` 기반의 보드 UI를 사용합니다.
@@ -57,7 +57,7 @@ npm run build
 
 ## ohmesh 데이터
 
-로그인 전 노트는 브라우저 `localStorage`에 압축 저장됩니다. `저장하기`를 누르면 ohmesh 로그인을 거쳐 현재 브라우저 노트를 계정에 저장합니다. ohmesh 인증은 `ohmesh_session` HttpOnly 쿠키만 사용하며, 앱 코드에서 토큰을 직접 다루지 않습니다.
+로그인 전 노트는 브라우저 `localStorage`에 압축 저장됩니다. `로그인`을 누르면 ohmesh 로그인을 거쳐 현재 브라우저 노트를 계정에 저장합니다. ohmesh 인증은 `ohmesh_session` HttpOnly 쿠키만 사용하며, 앱 코드에서 토큰을 직접 다루지 않습니다.
 
 - 앱 슬러그: `gamelingo`
 - 저장 record type: `gamelingo-study-state`

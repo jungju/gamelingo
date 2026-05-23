@@ -277,9 +277,9 @@ function StudyHeader({
           className={isGuestMode ? "primary-button primary-button--warm" : "small-button"}
           type="button"
           onClick={isGuestMode ? onSaveToOhmesh : onLogout}
-          title={isGuestMode ? "ohmesh에 저장" : getUserDisplayName(user)}
+          title={isGuestMode ? "ohmesh 로그인" : getUserDisplayName(user)}
         >
-          {isGuestMode ? "저장하기" : "로그아웃"}
+          {isGuestMode ? "로그인" : "로그아웃"}
         </button>
       </div>
     </header>

@@ -141,7 +141,7 @@ function AccountSummary({ syncState, user, isGuestMode, onLogout, onSaveToOhmesh
         type="button"
         onClick={isGuestMode ? onSaveToOhmesh : onLogout}
       >
-        {isGuestMode ? "저장하기" : "로그아웃"}
+        {isGuestMode ? "로그인" : "로그아웃"}
       </button>
     </div>
   );

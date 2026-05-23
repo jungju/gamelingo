@@ -165,7 +165,7 @@ export function getUserDisplayName(user) {
 }
 
 export function getSyncStatusLabel(syncState) {
-  if (syncState.status === "local") return "브라우저 저장";
+  if (syncState.status === "local") return "";
   if (syncState.status === "loading") return "불러오는 중";
   if (syncState.status === "saving") return "저장 중";
   if (syncState.status === "saved") return "저장됨";
