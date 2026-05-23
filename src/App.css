@@ -202,22 +202,27 @@ img {
   box-shadow: 0 25px 70px rgba(0, 0, 0, 0.45);
 }
 
-.study-template #noteLayer {
+.study-template .note-list {
   position: relative;
   z-index: 10;
-  height: 100%;
+  width: clamp(220px, 30vw, 300px);
+  height: calc(100% - 104px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 32px 0 120px 32px;
+  list-style: none;
 }
 
 .study-template .empty-board-note {
-  position: absolute;
-  left: 32px;
-  top: 32px;
-  max-width: 420px;
+  max-width: 280px;
   border: 1px dashed rgba(120, 53, 15, 0.5);
-  border-radius: 24px;
+  border-radius: 18px;
   background: rgba(12, 10, 9, 0.72);
   color: #a8a29e;
-  padding: 24px;
+  padding: 18px;
 }
 
 .study-template .empty-board-note p {
@@ -234,16 +239,19 @@ img {
 }
 
 .study-template .note-card {
-  position: absolute;
-  width: 256px;
+  position: relative;
+  width: 100%;
+  flex: 0 0 auto;
   border: 1px solid rgba(120, 53, 15, 0.4);
-  border-radius: 18px;
+  border-radius: 14px;
   background: rgba(254, 243, 199, 0.96);
   color: #1c1917;
-  padding: 16px;
+  padding: 11px;
   text-align: left;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
-  transition: background 0.15s ease;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28);
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .study-template .note-card:hover {
@@ -252,10 +260,10 @@ img {
 
 .study-template .drag-handle {
   position: absolute;
-  right: 8px;
-  top: 8px;
-  width: 32px;
-  height: 32px;
+  right: 6px;
+  top: 6px;
+  width: 28px;
+  height: 28px;
   display: grid;
   place-items: center;
   border: 0;
@@ -275,7 +283,7 @@ img {
   border: 0;
   background: transparent;
   color: inherit;
-  padding: 0 32px 0 0;
+  padding: 0 26px 0 0;
   text-align: left;
 }
 
@@ -283,9 +291,9 @@ img {
   display: flex;
   align-items: center;
   gap: 7px;
-  margin-bottom: 12px;
+  margin-bottom: 7px;
   overflow: hidden;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
   letter-spacing: 0;
   opacity: 0.6;
@@ -296,27 +304,27 @@ img {
 
 .study-template .note-title {
   margin: 0;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 900;
   line-height: 1.2;
 }
 
 .study-template .note-summary {
   display: -webkit-box;
-  margin: 8px 0 0;
+  margin: 5px 0 0;
   overflow: hidden;
   font-size: 12px;
-  line-height: 1.6;
+  line-height: 1.45;
   opacity: 0.76;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
 }
 
 .study-template .note-words {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 16px;
+  gap: 5px;
+  margin-top: 10px;
 }
 
 .study-template .tag {
@@ -773,7 +781,7 @@ img {
     inset: 12px;
   }
 
-  .study-template #noteLayer {
+  .study-template .note-list {
     display: grid;
     height: auto;
     min-height: 520px;
@@ -787,8 +795,6 @@ img {
   .study-template .character-strip {
     position: relative;
     inset: auto;
-    left: auto !important;
-    top: auto !important;
     width: 100%;
   }
 

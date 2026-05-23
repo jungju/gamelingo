@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { AnimatePresence, motion, useDragControls } from "framer-motion";
+import { useState } from "react";
+import { AnimatePresence, motion, Reorder, useDragControls } from "framer-motion";
 import {
   ArrowLeft,
   BookOpen,
@@ -13,7 +13,6 @@ import {
   X,
 } from "lucide-react";
 import {
-  clampBoardPercent,
   createCharacterId,
   createId,
   createVocabularyId,
@@ -45,7 +44,6 @@ export function StudyBoardPage({
   const [openedCharacterId, setOpenedCharacterId] = useState(null);
   const [wordForm, setWordForm] = useState({ open: false, mode: "add", word: null });
   const [addCharacterOpen, setAddCharacterOpen] = useState(false);
-  const boardRef = useRef(null);
 
   const openedSentence = data.sentences.find((sentence) => sentence.id === openedSentenceId) || null;
   const openedCharacter = data.characters.find((character) => character.id === openedCharacterId) || null;
@@ -96,13 +94,22 @@ export function StudyBoardPage({
     closeSentenceModal();
   }
 
-  function moveSentence(sentenceId, x, y) {
-    setData((previousData) => ({
-      ...previousData,
-      sentences: previousData.sentences.map((sentence) =>
-        sentence.id === sentenceId ? { ...sentence, x: clampBoardPercent(x), y: clampBoardPercent(y) } : sentence
-      ),
-    }));
+  function reorderSentences(reorderedSentences) {
+    const reorderedIds = reorderedSentences.map((sentence) => sentence.id);
+
+    setData((previousData) => {
+      const previousSentencesById = new Map(previousData.sentences.map((sentence) => [sentence.id, sentence]));
+      const reorderedIdSet = new Set(reorderedIds);
+      const orderedSentences = reorderedIds
+        .map((sentenceId) => previousSentencesById.get(sentenceId))
+        .filter(Boolean);
+      const remainingSentences = previousData.sentences.filter((sentence) => !reorderedIdSet.has(sentence.id));
+
+      return {
+        ...previousData,
+        sentences: [...orderedSentences, ...remainingSentences],
+      };
+    });
   }
 
   function saveVocabularyEntry(entryDraft) {
@@ -194,16 +201,15 @@ export function StudyBoardPage({
         </div>
       ) : null}
       <Board
-        boardRef={boardRef}
         sentences={data.sentences}
         vocabulary={data.vocabulary}
         characters={data.characters}
         onAddCharacter={() => setAddCharacterOpen(true)}
         onAddWord={() => setWordForm({ open: true, mode: "add", word: null })}
-        onMoveSentence={moveSentence}
         onOpenCharacter={(character) => setOpenedCharacterId(character.id)}
         onOpenNote={(sentence) => setOpenedSentenceId(sentence.id)}
         onOpenWord={(word) => setWordForm({ open: true, mode: "edit", word })}
+        onReorderSentences={reorderSentences}
       />
       {isNewSentenceOpen || openedSentence ? (
         <SentenceBoardModal
@@ -287,51 +293,44 @@ function StudyHeader({
 }
 
 function Board({
-  boardRef,
   sentences,
   vocabulary,
   characters,
   onAddCharacter,
   onAddWord,
-  onMoveSentence,
   onOpenCharacter,
   onOpenNote,
   onOpenWord,
+  onReorderSentences,
 }) {
-  const [noteZIndexes, setNoteZIndexes] = useState(() =>
-    Object.fromEntries(sentences.map((sentence, index) => [sentence.id, index + 1]))
-  );
-  const topZIndexRef = useRef(sentences.length + 1);
-
-  const bringNoteToFront = (noteId) => {
-    topZIndexRef.current += 1;
-    setNoteZIndexes((previous) => ({ ...previous, [noteId]: topZIndexRef.current }));
-  };
-
   return (
-    <main ref={boardRef} className="board">
+    <main className="board">
       <div className="board-grid" />
-      <div id="noteLayer">
-        {sentences.length === 0 ? (
+      {sentences.length === 0 ? (
+        <div className="note-list">
           <div className="empty-board-note">
             <p>아직 보드 노트가 없습니다.</p>
             <span>상단의 노트 추가를 눌러 게임에서 발견한 영어 문장을 붙여보세요.</span>
           </div>
-        ) : null}
-        {sentences.map((sentence, index) => (
-          <NoteCard
-            key={sentence.id}
-            boardRef={boardRef}
-            sentence={sentence}
-            sentenceIndex={index}
-            vocabulary={vocabulary}
-            onMove={onMoveSentence}
-            onOpen={onOpenNote}
-            zIndex={noteZIndexes[sentence.id] ?? index + 1}
-            onFocus={bringNoteToFront}
-          />
-        ))}
-      </div>
+        </div>
+      ) : (
+        <Reorder.Group
+          axis="y"
+          values={sentences}
+          onReorder={onReorderSentences}
+          className="note-list"
+        >
+          {sentences.map((sentence, index) => (
+            <NoteCard
+              key={sentence.id}
+              sentence={sentence}
+              sentenceIndex={index}
+              vocabulary={vocabulary}
+              onOpen={onOpenNote}
+            />
+          ))}
+        </Reorder.Group>
+      )}
       <WordBoardNote vocabulary={vocabulary} onAddWord={onAddWord} onOpenWord={onOpenWord} />
       <div className="character-strip">
         <div className="character-scroll">
@@ -347,45 +346,28 @@ function Board({
   );
 }
 
-function NoteCard({ boardRef, sentence, sentenceIndex, vocabulary, onMove, onOpen, zIndex, onFocus }) {
+function NoteCard({ sentence, sentenceIndex, vocabulary, onOpen }) {
   const dragControls = useDragControls();
   const words = findVocabularyForSentence(sentence, vocabulary);
 
-  function finishDrag(info) {
-    const boardRect = boardRef.current?.getBoundingClientRect();
-    if (!boardRect) return;
-
-    const x = sentence.x + (info.offset.x / boardRect.width) * 100;
-    const y = sentence.y + (info.offset.y / boardRect.height) * 100;
-    onMove(sentence.id, x, y);
-  }
-
   return (
-    <motion.div
-      drag
+    <Reorder.Item
+      value={sentence}
       dragControls={dragControls}
       dragListener={false}
       dragMomentum={false}
       initial={{ opacity: 0, scale: 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
-      whileHover={{ rotate: -0.5 }}
-      whileDrag={{ scale: 1 }}
-      onDragEnd={(event, info) => {
-        event.stopPropagation();
-        finishDrag(info);
-      }}
-      onPointerDown={() => onFocus(sentence.id)}
+      whileDrag={{ scale: 1.01 }}
       className="note-card"
-      style={{ left: `${sentence.x}%`, top: `${sentence.y}%`, zIndex }}
     >
       <button
         onPointerDown={(event) => {
           event.stopPropagation();
-          onFocus(sentence.id);
           dragControls.start(event);
         }}
         className="drag-handle"
-        title="노트 이동"
+        title="노트 순서 변경"
         type="button"
       >
         <GripVertical className="h-4 w-4" />
@@ -399,14 +381,14 @@ function NoteCard({ boardRef, sentence, sentenceIndex, vocabulary, onMove, onOpe
         <h3 className="note-title">{getSentenceTitle(sentence)}</h3>
         <p className="note-summary">{getSentenceSummary(sentence)}</p>
         <div className="note-words">
-          {words.slice(0, 3).map((entry) => (
+          {words.slice(0, 2).map((entry) => (
             <span key={entry.id} className="tag">
               {entry.word}: {entry.meaning}
             </span>
           ))}
         </div>
       </button>
-    </motion.div>
+    </Reorder.Item>
   );
 }
 
