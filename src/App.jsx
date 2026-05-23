@@ -1,4 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useDragControls } from "framer-motion";
+import {
+  ArrowLeft,
+  BookOpen,
+  Gamepad2,
+  GripVertical,
+  Languages,
+  Pin,
+  Plus,
+  Search,
+  StickyNote,
+  UserRound,
+  X,
+} from "lucide-react";
 import "./App.css";
 
 const OHMESH_BASE_URL = "https://ohmesh.jjgo.io";
@@ -15,19 +29,13 @@ const LEGACY_GUEST_EDITH_FINCH_KEY = "gamelingo:v2:edithFinch:guest";
 const EDITH_FINCH_ID = "edith-finch";
 const HOME_PATH = "/";
 const EDITH_FINCH_COVER = "/edith-finch-cover.png";
-const DEFAULT_UI_TEMPLATE = "default";
-const CARD_POPUP_UI_TEMPLATE = "card-popup";
-const uiTemplateOptions = [
-  { value: DEFAULT_UI_TEMPLATE, label: "기본 UI" },
-  { value: CARD_POPUP_UI_TEMPLATE, label: "카드 팝업 UI" },
-];
 
 const defaultGames = [
   {
     id: EDITH_FINCH_ID,
     path: "/games/edith-finch",
     title: "What Remains of Edith Finch",
-    description: "대사를 내 문장으로 바꾸기",
+    description: "대사를 보드에 모아 내 문장으로 바꾸기",
     artwork: EDITH_FINCH_COVER,
     isCustom: false,
   },
@@ -45,24 +53,36 @@ const missionItems = [
 const sampleSentences = [
   {
     id: "sample-1",
+    title: "I remember",
+    chapter: "Opening",
     original: "I remember.",
     meaning: "나는 기억한다.",
     mySentence: "I remember my first day at work.",
     practiced: false,
+    x: 7,
+    y: 12,
   },
   {
     id: "sample-2",
+    title: "I was afraid",
+    chapter: "Memory",
     original: "I was afraid.",
     meaning: "나는 두려웠다.",
     mySentence: "I was nervous before the meeting.",
     practiced: false,
+    x: 38,
+    y: 15,
   },
   {
     id: "sample-3",
+    title: "Couldn't explain it",
+    chapter: "Story",
     original: "I couldn't explain it.",
     meaning: "나는 그것을 설명할 수 없었다.",
     mySentence: "I couldn't explain my idea clearly.",
     practiced: false,
+    x: 14,
+    y: 53,
   },
 ];
 
@@ -98,125 +118,15 @@ const defaultVocabularyEntries = [
   { id: "vocab-library", word: "library", meaning: "서재, 도서관" },
   { id: "vocab-map", word: "map", meaning: "지도" },
   { id: "vocab-memory", word: "memory", meaning: "기억" },
-  { id: "vocab-monster", word: "monster", meaning: "괴물" },
-  { id: "vocab-nursery", word: "nursery", meaning: "아이 방, 유아실" },
   { id: "vocab-passage", word: "passage", meaning: "통로" },
   { id: "vocab-portrait", word: "portrait", meaning: "초상화" },
   { id: "vocab-remains", word: "remains", meaning: "남은 것, 유해" },
   { id: "vocab-room", word: "room", meaning: "방" },
-  { id: "vocab-sailor", word: "sailor", meaning: "선원" },
   { id: "vocab-secret", word: "secret", meaning: "비밀" },
-  { id: "vocab-shore", word: "shore", meaning: "해안, 바닷가" },
   { id: "vocab-story", word: "story", meaning: "이야기" },
   { id: "vocab-survive", word: "survive", meaning: "살아남다" },
-  { id: "vocab-swing", word: "swing", meaning: "그네" },
-  { id: "vocab-tower", word: "tower", meaning: "탑" },
-  { id: "vocab-tree", word: "tree", meaning: "나무" },
-  { id: "vocab-tunnel", word: "tunnel", meaning: "터널" },
-  { id: "vocab-unlock", word: "unlock", meaning: "잠금을 풀다" },
-  { id: "vocab-wedding", word: "wedding", meaning: "결혼식" },
-  { id: "vocab-will", word: "will", meaning: "유언장" },
   { id: "vocab-window", word: "window", meaning: "창문" },
 ];
-
-const edithFinchGuide = {
-  title: "What Remains of Edith Finch 플레이 미션",
-  description:
-    "스토리를 즐기면서 마음에 남는 영어 문장을 모읍니다. 모든 문장을 공부하려고 하지 말고, 내가 실제로 써볼 수 있는 짧은 문장만 가져옵니다.",
-  steps: [
-    {
-      title: "먼저 게임을 즐기기",
-      bullets: [
-        "처음부터 멈추지 말고 스토리를 진행합니다.",
-        "모르는 문장이 나와도 괜찮습니다.",
-        "게임 흐름을 놓치지 않는 게 먼저입니다.",
-      ],
-    },
-    {
-      title: "문장 사냥하기",
-      bullets: [
-        "플레이 중 짧고 마음에 드는 영어 문장을 발견하면 저장합니다.",
-        "좋은 문장 기준은 짧다, 감정이 있다, 내 상황에 바꿔 쓸 수 있다, 소리 내서 말하기 쉽다입니다.",
-      ],
-    },
-    {
-      title: "단어와 장면 메모하기",
-      bullets: [
-        "자주 들리는 단어는 뜻과 함께 짧게 적습니다.",
-        "스토리 메모에는 오늘 본 장면이나 인물 관계만 한두 줄 남깁니다.",
-      ],
-    },
-    {
-      title: "내 문장으로 바꾸기",
-      bullets: ["게임 문장을 그대로 외우지 말고 내 상황에 맞게 바꿉니다."],
-      example: {
-        original: "I was afraid.",
-        mine: "I was nervous before the meeting.",
-      },
-    },
-    {
-      title: "소리 내서 말하기",
-      bullets: [
-        "원문을 듣고 따라 말합니다.",
-        "그다음 내 문장도 한 번 말합니다.",
-        "완벽한 발음보다 입으로 말해보는 것이 중요합니다.",
-      ],
-    },
-    {
-      title: "익숙해지면 체크하기",
-      bullets: ["문장을 보고 뜻을 알고, 내 문장으로 한 번 말할 수 있으면 연습 완료로 체크합니다."],
-    },
-    {
-      title: "가볍게 반복하기",
-      bullets: ["다음 플레이 전에 저장한 문장을 한두 개만 다시 듣고 말합니다."],
-    },
-  ],
-  tips: [
-    "게임을 멈추면서까지 공부하지 않아도 됩니다.",
-    "한 번 플레이할 때 문장 3개면 충분합니다.",
-    "많이 저장하는 것보다 저장한 문장을 내 말로 바꾸는 것이 더 중요합니다.",
-    "긴 문장보다 내가 실제로 쓸 수 있는 짧은 문장이 좋습니다.",
-    "단어와 스토리 메모는 완벽하게 정리하지 말고 다음에 기억날 만큼만 적습니다.",
-    "목표는 모든 대사를 해석하는 것이 아니라 게임 속 문장을 내 영어로 바꾸는 것입니다.",
-  ],
-};
-
-const genericGameGuide = {
-  title: "플레이 미션",
-  description:
-    "게임을 즐기면서 실제로 써보고 싶은 짧은 영어 문장을 모읍니다. 모든 대사를 정리하기보다 내 상황에 바꿔 말할 수 있는 문장에 집중합니다.",
-  steps: [
-    {
-      title: "먼저 게임을 즐기기",
-      bullets: ["흐름을 끊지 않고 플레이합니다.", "모르는 문장이 나와도 일단 지나가도 됩니다."],
-    },
-    {
-      title: "짧은 문장 저장하기",
-      bullets: ["마음에 남는 영어 문장을 발견하면 원문만 빠르게 저장합니다."],
-    },
-    {
-      title: "뜻과 단어 남기기",
-      bullets: ["나중에 다시 봐도 기억날 만큼만 뜻과 단어를 적습니다."],
-    },
-    {
-      title: "내 문장으로 바꾸기",
-      bullets: ["게임 문장을 내 일상에서 쓸 수 있는 문장으로 바꿔봅니다."],
-      example: {
-        original: "I need a minute.",
-        mine: "I need a minute before the call.",
-      },
-    },
-    {
-      title: "소리 내서 연습하기",
-      bullets: ["원문과 내 문장을 한 번씩 소리 내서 말한 뒤 연습 완료로 체크합니다."],
-    },
-  ],
-  tips: [
-    "한 번 플레이할 때 문장 몇 개만 챙겨도 충분합니다.",
-    "긴 문장보다 입으로 말하기 쉬운 문장이 좋습니다.",
-    "뜻을 완벽하게 정리하기보다 다시 봤을 때 떠오르는 정도면 됩니다.",
-  ],
-};
 
 function createDefaultMissionChecks() {
   return missionItems.reduce((checks, item) => ({ ...checks, [item.id]: false }), {});
@@ -228,8 +138,7 @@ function createDefaultEdithFinchData() {
     vocabulary: createDefaultVocabularyEntries(),
     storyMemo: "",
     missionChecks: createDefaultMissionChecks(),
-    sentences: sampleSentences,
-    uiTemplate: DEFAULT_UI_TEMPLATE,
+    sentences: sampleSentences.map((sentence) => ({ ...sentence })),
     characters: [],
   };
 }
@@ -241,7 +150,6 @@ function createEmptyGameNoteData() {
     storyMemo: "",
     missionChecks: createDefaultMissionChecks(),
     sentences: [],
-    uiTemplate: DEFAULT_UI_TEMPLATE,
     characters: [],
   };
 }
@@ -259,34 +167,19 @@ function createDefaultAppData(edithFinchData = createDefaultEdithFinchData()) {
   };
 }
 
-function createEmptySentenceForm() {
-  return {
-    original: "",
-    meaning: "",
-    mySentence: "",
-  };
-}
-
-function createEmptyCharacterForm() {
-  return {
-    name: "",
-    description: "",
-  };
-}
-
-function createId() {
+function createId(prefix = "item") {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
     return crypto.randomUUID();
   }
-  return `sentence-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 function createVocabularyId() {
-  return `vocabulary-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return createId("vocabulary");
 }
 
 function createCharacterId() {
-  return `character-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return createId("character");
 }
 
 function createGameId(title, existingIds = new Set()) {
@@ -422,7 +315,6 @@ function normalizeGameNoteData(data, gameId) {
     sentences: Array.isArray(data.sentences)
       ? data.sentences.map(normalizeSentence).filter(Boolean)
       : defaultData.sentences,
-    uiTemplate: normalizeUITemplate(data.uiTemplate),
     characters: Array.isArray(data.characters)
       ? data.characters.map(normalizeCharacter).filter(Boolean)
       : defaultData.characters,
@@ -440,7 +332,6 @@ function normalizeCompactGameNoteData(data, gameId) {
     sentences: Array.isArray(data?.s)
       ? data.s.map(normalizeCompactSentence).filter(Boolean)
       : defaultData.sentences,
-    uiTemplate: normalizeUITemplate(data?.u),
     characters: Array.isArray(data?.p)
       ? data.p.map(normalizeCompactCharacter).filter(Boolean)
       : defaultData.characters,
@@ -459,17 +350,33 @@ function normalizeCompactMissionChecks(missionMask) {
   );
 }
 
-function normalizeCompactSentence(sentence) {
+function normalizeCompactSentence(sentence, index = 0) {
   if (Array.isArray(sentence)) {
-    return normalizeSentence({
-      original: sentence[0],
-      meaning: sentence[1] || "",
-      mySentence: sentence[2] || "",
-      practiced: Boolean(sentence[3]),
-    });
+    return normalizeSentence(
+      {
+        original: sentence[0],
+        meaning: sentence[1] || "",
+        mySentence: sentence[2] || "",
+        practiced: Boolean(sentence[3]),
+      },
+      index
+    );
   }
 
-  return normalizeSentence(sentence);
+  return normalizeSentence(
+    {
+      id: sentence?.i || sentence?.id,
+      title: sentence?.t || sentence?.title,
+      chapter: sentence?.h || sentence?.chapter,
+      original: sentence?.o || sentence?.original,
+      meaning: sentence?.k || sentence?.meaning,
+      mySentence: sentence?.r || sentence?.mySentence,
+      practiced: sentence?.p || sentence?.practiced,
+      x: sentence?.x,
+      y: sentence?.y,
+    },
+    index
+  );
 }
 
 function normalizeCompactCharacter(character) {
@@ -551,10 +458,6 @@ function serializeGameNoteData(data, gameId) {
     compactData.s = normalizedData.sentences.map(serializeSentence);
   }
 
-  if (normalizedData.uiTemplate !== DEFAULT_UI_TEMPLATE) {
-    compactData.u = normalizedData.uiTemplate;
-  }
-
   if (normalizedData.characters.length > 0) {
     compactData.p = normalizedData.characters.map(serializeCharacter);
   }
@@ -573,19 +476,16 @@ function serializeMissionChecks(missionChecks) {
 }
 
 function serializeSentence(sentence) {
-  const compactSentence = [sentence.original];
+  const compactSentence = { o: sentence.original };
 
-  if (sentence.meaning || sentence.mySentence || sentence.practiced) {
-    compactSentence.push(sentence.meaning);
-  }
-
-  if (sentence.mySentence || sentence.practiced) {
-    compactSentence.push(sentence.mySentence);
-  }
-
-  if (sentence.practiced) {
-    compactSentence.push(1);
-  }
+  if (sentence.id) compactSentence.i = sentence.id;
+  if (sentence.title) compactSentence.t = sentence.title;
+  if (sentence.chapter) compactSentence.h = sentence.chapter;
+  if (sentence.meaning) compactSentence.k = sentence.meaning;
+  if (sentence.mySentence) compactSentence.r = sentence.mySentence;
+  if (sentence.practiced) compactSentence.p = 1;
+  if (Number.isFinite(sentence.x)) compactSentence.x = sentence.x;
+  if (Number.isFinite(sentence.y)) compactSentence.y = sentence.y;
 
   return compactSentence;
 }
@@ -614,7 +514,9 @@ function areSentencesEquivalent(sentences, referenceSentences) {
       sentence?.original === referenceSentence.original &&
       sentence?.meaning === referenceSentence.meaning &&
       sentence?.mySentence === referenceSentence.mySentence &&
-      Boolean(sentence?.practiced) === Boolean(referenceSentence.practiced)
+      Boolean(sentence?.practiced) === Boolean(referenceSentence.practiced) &&
+      sentence?.x === referenceSentence.x &&
+      sentence?.y === referenceSentence.y
     );
   });
 }
@@ -643,40 +545,23 @@ function normalizeVocabularyEntries(vocabulary, legacyWordMemo) {
   }
 
   if (typeof legacyWordMemo === "string" && legacyWordMemo.trim()) {
-    return legacyWordMemo
-      .split(/\r?\n|\/|,/)
-      .map((memoLine) => memoLine.trim())
-      .filter(Boolean)
-      .map((memoLine) => {
-        const [word, ...meaningParts] = memoLine.split(/\s+/);
-        return normalizeVocabularyEntry({
-          id: createVocabularyId(),
-          word: word || memoLine,
-          meaning: meaningParts.join(" "),
-        });
-      })
-      .filter(Boolean);
+    return parseVocabularyText(legacyWordMemo.replaceAll("/", "\n").replaceAll(",", "\n"));
   }
 
   return createDefaultVocabularyEntries();
 }
 
 function normalizeVocabularyEntry(entry) {
-  if (!entry || typeof entry !== "object" || typeof entry.word !== "string") {
-    return null;
-  }
+  if (!entry || typeof entry !== "object") return null;
 
-  const word = entry.word.trim();
-  if (!word) {
-    return null;
-  }
+  const rawWord = typeof entry.word === "string" ? entry.word : entry.en;
+  const word = typeof rawWord === "string" ? rawWord.trim() : "";
+  if (!word) return null;
 
   return {
     id: entry.id || createVocabularyId(),
     word,
-    meaning: typeof entry.meaning === "string" ? entry.meaning : "",
-    gameExample: typeof entry.gameExample === "string" ? entry.gameExample : "",
-    myExample: typeof entry.myExample === "string" ? entry.myExample : "",
+    meaning: typeof entry.meaning === "string" ? entry.meaning : entry.ko || "",
   };
 }
 
@@ -715,8 +600,6 @@ function parseVocabularyText(vocabularyText, existingVocabulary = []) {
         id: existingEntry?.id || createVocabularyId(),
         word,
         meaning,
-        gameExample: existingEntry?.gameExample || "",
-        myExample: existingEntry?.myExample || "",
       });
     })
     .filter(Boolean);
@@ -738,28 +621,31 @@ function normalizeMissionChecks(missionChecks) {
   );
 }
 
-function normalizeSentence(sentence) {
+function normalizeSentence(sentence, index = 0) {
   if (!sentence || typeof sentence !== "object" || typeof sentence.original !== "string") {
     return null;
   }
 
+  const original = sentence.original.trim();
+  if (!original) return null;
+
+  const defaultPosition = getDefaultBoardPosition(index);
+
   return {
-    id: sentence.id || createId(),
-    original: sentence.original,
+    id: sentence.id || createId("sentence"),
+    title: typeof sentence.title === "string" ? sentence.title : "",
+    chapter: typeof sentence.chapter === "string" ? sentence.chapter : "",
+    original,
     meaning: typeof sentence.meaning === "string" ? sentence.meaning : "",
     mySentence: typeof sentence.mySentence === "string" ? sentence.mySentence : "",
     practiced: Boolean(sentence.practiced),
+    x: clampBoardPercent(Number.isFinite(sentence.x) ? sentence.x : defaultPosition.x),
+    y: clampBoardPercent(Number.isFinite(sentence.y) ? sentence.y : defaultPosition.y),
   };
 }
 
-function normalizeUITemplate(uiTemplate) {
-  return uiTemplate === CARD_POPUP_UI_TEMPLATE ? CARD_POPUP_UI_TEMPLATE : DEFAULT_UI_TEMPLATE;
-}
-
 function normalizeCharacter(character) {
-  if (!character || typeof character !== "object") {
-    return null;
-  }
+  if (!character || typeof character !== "object") return null;
 
   const name = typeof character.name === "string" ? character.name.trim() : "";
   if (!name) return null;
@@ -933,33 +819,20 @@ function getSyncStatusLabel(syncState) {
   return "대기";
 }
 
-function createGameLibrary(customGames, notesByGameId = {}) {
+function createGameLibrary(customGames) {
   return [
-    ...defaultGames.map((game) => ({
-      ...game,
-      uiTemplate: normalizeUITemplate(notesByGameId[game.id]?.uiTemplate),
-    })),
+    ...defaultGames,
     ...customGames.map((game) => ({
       ...game,
       path: `/games/${game.id}`,
-      description: game.description || "내 게임 문장 노트",
+      description: game.description || "내 게임 영어 보드",
       isCustom: true,
-      uiTemplate: normalizeUITemplate(notesByGameId[game.id]?.uiTemplate),
     })),
   ];
 }
 
 function getKnownGameIds(appData) {
   return new Set([...defaultGames.map((game) => game.id), ...appData.customGames.map((game) => game.id)]);
-}
-
-function getGameGuide(game) {
-  if (game.id === EDITH_FINCH_ID) return edithFinchGuide;
-
-  return {
-    ...genericGameGuide,
-    title: `${game.title} 플레이 미션`,
-  };
 }
 
 function getGameCoverLabel(game) {
@@ -983,6 +856,41 @@ function getGameAccentColor(gameId) {
   const colors = ["#38bdf8", "#f97316", "#84cc16", "#f43f5e", "#eab308", "#14b8a6"];
   const colorIndex = [...gameId].reduce((sum, character) => sum + character.charCodeAt(0), 0) % colors.length;
   return colors[colorIndex];
+}
+
+function getDefaultBoardPosition(index) {
+  const positions = [
+    { x: 7, y: 12 },
+    { x: 38, y: 15 },
+    { x: 14, y: 53 },
+    { x: 56, y: 47 },
+    { x: 24, y: 28 },
+    { x: 49, y: 66 },
+  ];
+  return positions[index % positions.length];
+}
+
+function clampBoardPercent(value) {
+  if (!Number.isFinite(value)) return 10;
+  return Math.max(2, Math.min(76, Math.round(value * 10) / 10));
+}
+
+function getSentenceTitle(sentence) {
+  return sentence.title || sentence.original.split(/\s+/).slice(0, 5).join(" ");
+}
+
+function getSentenceChapter(sentence, index) {
+  return sentence.chapter || `Note ${index + 1}`;
+}
+
+function getSentenceSummary(sentence) {
+  return sentence.mySentence || sentence.meaning || sentence.original;
+}
+
+function findVocabularyForSentence(sentence, vocabulary) {
+  const sourceText = `${sentence.original} ${sentence.meaning} ${sentence.mySentence}`.toLowerCase();
+  const matches = vocabulary.filter((entry) => sourceText.includes(entry.word.toLowerCase()));
+  return (matches.length ? matches : vocabulary).slice(0, 4);
 }
 
 export default function App() {
@@ -1329,7 +1237,7 @@ export default function App() {
     };
   }, [authState.status, appData, handleSessionProblem, isRemoteDataReady, storageRecord?.id]);
 
-  const gameLibrary = createGameLibrary(appData.customGames, appData.notesByGameId);
+  const gameLibrary = createGameLibrary(appData.customGames);
   const selectedGameInfo = gameLibrary.find((game) => game.path === routePath);
   const selectedGameData = selectedGameInfo
     ? appData.notesByGameId[selectedGameInfo.id] || createDefaultGameNoteData(selectedGameInfo.id)
@@ -1378,7 +1286,7 @@ export default function App() {
     });
   }
 
-  function createCustomGame({ title, description, uiTemplate }) {
+  function createCustomGame({ title, description }) {
     const timestamp = new Date().toISOString();
     const game = {
       id: createGameId(title, getKnownGameIds(appData)),
@@ -1387,26 +1295,21 @@ export default function App() {
       createdAt: timestamp,
       updatedAt: timestamp,
     };
-    const gameNote = {
-      ...createDefaultGameNoteData(game.id),
-      uiTemplate: normalizeUITemplate(uiTemplate),
-    };
 
     setAppData((previousData) => ({
       ...previousData,
       customGames: [...previousData.customGames, game],
       notesByGameId: {
         ...previousData.notesByGameId,
-        [game.id]: gameNote,
+        [game.id]: createDefaultGameNoteData(game.id),
       },
     }));
 
     return game;
   }
 
-  function updateCustomGame(gameId, { title, description, uiTemplate }) {
+  function updateCustomGame(gameId, { title, description }) {
     const timestamp = new Date().toISOString();
-    const normalizedUITemplate = normalizeUITemplate(uiTemplate);
 
     setAppData((previousData) => ({
       ...previousData,
@@ -1420,34 +1323,6 @@ export default function App() {
             }
           : game
       ),
-      notesByGameId: {
-        ...previousData.notesByGameId,
-        [gameId]: normalizeGameNoteData(
-          {
-            ...(previousData.notesByGameId[gameId] || createDefaultGameNoteData(gameId)),
-            uiTemplate: normalizedUITemplate,
-          },
-          gameId
-        ),
-      },
-    }));
-  }
-
-  function updateGameTemplate(gameId, uiTemplate) {
-    const normalizedUITemplate = normalizeUITemplate(uiTemplate);
-
-    setAppData((previousData) => ({
-      ...previousData,
-      notesByGameId: {
-        ...previousData.notesByGameId,
-        [gameId]: normalizeGameNoteData(
-          {
-            ...(previousData.notesByGameId[gameId] || createDefaultGameNoteData(gameId)),
-            uiTemplate: normalizedUITemplate,
-          },
-          gameId
-        ),
-      },
     }));
   }
 
@@ -1469,77 +1344,67 @@ export default function App() {
   }
 
   if (authState.status === "checking") {
-    return (
-      <div className="app-shell home-shell">
-        <AuthStatePage title="로그인 확인 중" description={authState.message} />
-      </div>
-    );
+    return <AuthStatePage title="로그인 확인 중" description={authState.message} />;
   }
 
   if (authState.status === "wrong-app") {
     return (
-      <div className="app-shell home-shell">
-        <AuthStatePage
-          title="앱 세션 확인 필요"
-          description={authState.message}
-          primaryAction="로그아웃"
-          onPrimaryAction={logout}
-          secondaryAction="다시 확인"
-          onSecondaryAction={checkAuth}
-        />
-      </div>
+      <AuthStatePage
+        title="앱 세션 확인 필요"
+        description={authState.message}
+        primaryAction="로그아웃"
+        onPrimaryAction={logout}
+        secondaryAction="다시 확인"
+        onSecondaryAction={checkAuth}
+      />
     );
   }
 
   if (authState.status === "signed-in" && !isRemoteDataReady) {
     return (
-      <div className="app-shell home-shell">
-        <AuthStatePage
-          title={syncState.status === "error" ? "노트를 불러오지 못했습니다" : "노트를 불러오는 중"}
-          description={syncState.message || "ohmesh에서 내 문장 노트를 준비하고 있습니다."}
-          primaryAction={syncState.status === "error" ? "다시 시도" : undefined}
-          onPrimaryAction={syncState.status === "error" ? retryStorageLoad : undefined}
-          secondaryAction="로그아웃"
-          onSecondaryAction={logout}
-        />
-      </div>
+      <AuthStatePage
+        title={syncState.status === "error" ? "노트를 불러오지 못했습니다" : "노트를 불러오는 중"}
+        description={syncState.message || "ohmesh에서 내 문장 노트를 준비하고 있습니다."}
+        primaryAction={syncState.status === "error" ? "다시 시도" : undefined}
+        onPrimaryAction={syncState.status === "error" ? retryStorageLoad : undefined}
+        secondaryAction="로그아웃"
+        onSecondaryAction={logout}
+      />
     );
   }
 
   const isGuestMode = authState.status === "signed-out" || authState.status === "error";
+
+  if (selectedGameInfo) {
+    return (
+      <StudyBoardPage
+        key={selectedGameInfo.id}
+        game={selectedGameInfo}
+        data={selectedGameData}
+        setData={setSelectedGameData}
+        syncState={syncState}
+        user={authState.user}
+        isGuestMode={isGuestMode}
+        onGoHome={() => navigateTo(HOME_PATH)}
+        onLogout={logout}
+        onSaveToOhmesh={saveToOhmesh}
+      />
+    );
+  }
+
   return (
-    <div className={`app-shell ${selectedGameInfo ? "study-shell" : "home-shell"}`}>
-      {selectedGameInfo ? (
-        <main className="main-content">
-          <StudyGamePage
-            key={selectedGameInfo.id}
-            game={selectedGameInfo}
-            data={selectedGameData}
-            setData={setSelectedGameData}
-            syncState={syncState}
-            user={authState.user}
-            isGuestMode={isGuestMode}
-            onGoHome={() => navigateTo(HOME_PATH)}
-            onLogout={logout}
-            onSaveToOhmesh={saveToOhmesh}
-          />
-        </main>
-      ) : (
-        <HomePage
-          games={gameLibrary}
-          syncState={syncState}
-          user={authState.user}
-          isGuestMode={isGuestMode}
-          onCreateGame={createCustomGame}
-          onDeleteGame={deleteCustomGame}
-          onUpdateGame={updateCustomGame}
-          onUpdateGameTemplate={updateGameTemplate}
-          onLogout={logout}
-          onSaveToOhmesh={saveToOhmesh}
-          onSelectGame={(game) => navigateTo(game.path)}
-        />
-      )}
-    </div>
+    <HomePage
+      games={gameLibrary}
+      syncState={syncState}
+      user={authState.user}
+      isGuestMode={isGuestMode}
+      onCreateGame={createCustomGame}
+      onDeleteGame={deleteCustomGame}
+      onUpdateGame={updateCustomGame}
+      onLogout={logout}
+      onSaveToOhmesh={saveToOhmesh}
+      onSelectGame={(game) => navigateTo(game.path)}
+    />
   );
 }
 
@@ -1552,28 +1417,26 @@ function AuthStatePage({
   onSecondaryAction,
 }) {
   return (
-    <main className="auth-page">
-      <section className="panel auth-card">
+    <main className="grid min-h-screen place-items-center bg-stone-950 p-5 text-stone-100">
+      <section className="grid w-full max-w-2xl gap-6 rounded-[2rem] border border-stone-800 bg-stone-900/90 p-7 shadow-2xl">
         <div>
-          <p className="brand-label">Gamelingo</p>
-          <p className="brand-text">ohmesh 계정으로 문장 노트를 저장합니다.</p>
+          <p className="text-3xl font-black tracking-tight">Gamelingo</p>
+          <p className="mt-1 text-sm text-stone-500">ohmesh 계정으로 게임 영어 보드를 저장합니다.</p>
         </div>
-
         <div>
-          <p className="eyebrow">ohmesh</p>
-          <h1>{title}</h1>
-          {description ? <p className="page-description">{description}</p> : null}
+          <p className="mb-2 text-xs font-black uppercase tracking-wider text-stone-500">ohmesh</p>
+          <h1 className="text-4xl font-black tracking-tight">{title}</h1>
+          {description ? <p className="mt-4 leading-7 text-stone-400">{description}</p> : null}
         </div>
-
         {primaryAction || secondaryAction ? (
-          <div className="auth-actions">
+          <div className="flex flex-wrap gap-2">
             {primaryAction ? (
-              <button className="button primary" type="button" onClick={onPrimaryAction}>
+              <button className="rounded-2xl bg-stone-100 px-5 py-3 text-sm font-black text-stone-950" type="button" onClick={onPrimaryAction}>
                 {primaryAction}
               </button>
             ) : null}
             {secondaryAction ? (
-              <button className="button secondary" type="button" onClick={onSecondaryAction}>
+              <button className="rounded-2xl border border-stone-800 bg-stone-950 px-5 py-3 text-sm font-black text-stone-300" type="button" onClick={onSecondaryAction}>
                 {secondaryAction}
               </button>
             ) : null}
@@ -1592,7 +1455,6 @@ function HomePage({
   onCreateGame,
   onDeleteGame,
   onUpdateGame,
-  onUpdateGameTemplate,
   onLogout,
   onSaveToOhmesh,
   onSelectGame,
@@ -1616,10 +1478,8 @@ function HomePage({
   }
 
   function saveGame(gameDraft) {
-    if (editingGame?.isCustom) {
+    if (editingGame) {
       onUpdateGame(editingGame.id, gameDraft);
-    } else if (editingGame) {
-      onUpdateGameTemplate(editingGame.id, gameDraft.uiTemplate);
     } else {
       onCreateGame(gameDraft);
     }
@@ -1628,87 +1488,121 @@ function HomePage({
   }
 
   function deleteGame(game) {
-    if (window.confirm(`"${game.title}" 게임과 저장한 노트를 삭제할까요?`)) {
+    if (window.confirm(`"${game.title}" 게임과 저장한 보드를 삭제할까요?`)) {
       onDeleteGame(game.id);
     }
   }
 
   return (
-    <main className="home-page">
-      <header className="home-header">
-        <div className="brand home-brand">
-          <p className="brand-label">Gamelingo</p>
-          <p className="brand-text">게임별 영어 문장 노트</p>
-          <AccountSummary
-            syncState={syncState}
-            user={user}
-            isGuestMode={isGuestMode}
-            onLogout={onLogout}
-            onSaveToOhmesh={onSaveToOhmesh}
-          />
-        </div>
-        <div className="home-title-block">
-          <div>
-            <p className="eyebrow">게임 선택</p>
-            <h1>오늘 공부할 게임을 고르세요</h1>
-            <p className="page-description">공부 화면에서는 선택한 게임의 문장 노트에만 집중합니다.</p>
+    <main className="min-h-screen bg-stone-950 p-5 text-stone-100">
+      <div className="mx-auto grid min-h-[calc(100vh-40px)] w-full max-w-6xl content-center gap-5">
+        <header className="grid gap-5 rounded-[2rem] border border-stone-800 bg-stone-900/80 p-5 shadow-2xl md:grid-cols-[280px_1fr]">
+          <div className="rounded-3xl border border-stone-800 bg-stone-950 p-5">
+            <div className="mb-5 flex items-center gap-3">
+              <div className="grid h-11 w-11 place-items-center rounded-2xl bg-stone-800">
+                <Gamepad2 className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xl font-black">Gamelingo</p>
+                <p className="text-xs text-stone-500">게임 영어 보드</p>
+              </div>
+            </div>
+            <AccountSummary
+              syncState={syncState}
+              user={user}
+              isGuestMode={isGuestMode}
+              onLogout={onLogout}
+              onSaveToOhmesh={onSaveToOhmesh}
+            />
           </div>
-          <button className="button primary home-add-button" type="button" onClick={openCreateGame}>
-            게임 추가
-          </button>
-        </div>
-      </header>
+          <div className="flex flex-col justify-between gap-5">
+            <div>
+              <p className="mb-2 text-xs font-black uppercase tracking-wider text-stone-500">게임 선택</p>
+              <h1 className="max-w-2xl text-4xl font-black tracking-tight md:text-5xl">오늘 공부할 게임 보드를 고르세요</h1>
+              <p className="mt-4 max-w-2xl leading-7 text-stone-400">문장, 단어, 등장인물을 한 보드 위에 모아 게임 흐름을 보며 공부합니다.</p>
+            </div>
+            <button className="w-fit rounded-2xl bg-stone-100 px-5 py-3 text-sm font-black text-stone-950 hover:bg-white" type="button" onClick={openCreateGame}>
+              게임 추가
+            </button>
+          </div>
+        </header>
 
-      <section className="home-game-grid" aria-label="게임 선택">
-        {games.map((game) => (
-          <article key={game.id} className="home-game-card">
-            <a
-              href={game.path}
-              className="home-game-button"
-              onClick={(event) => {
-                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                event.preventDefault();
-                onSelectGame(game);
-              }}
-            >
-              <GameCover game={game} className="game-card-art" />
-              <span className="game-title">{game.title}</span>
-              <span className="game-description">{game.description}</span>
-              <span className="game-action">공부 시작</span>
-            </a>
-            <div className="game-card-tools">
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" aria-label="게임 선택">
+          {games.map((game) => (
+            <article key={game.id} className="rounded-[2rem] border border-stone-800 bg-stone-900/70 p-4 shadow-xl">
+              <a
+                href={game.path}
+                className="grid grid-cols-[86px_1fr] gap-4 rounded-3xl p-2 text-stone-100 no-underline hover:bg-stone-800/70"
+                onClick={(event) => {
+                  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                  event.preventDefault();
+                  onSelectGame(game);
+                }}
+              >
+                <GameCover game={game} className="h-[122px] w-[86px] rounded-2xl" />
+                <span className="grid content-center">
+                  <strong className="text-lg font-black leading-tight">{game.title}</strong>
+                  <span className="mt-2 text-sm text-stone-500">{game.description}</span>
+                  <span className="mt-5 text-xs font-black uppercase tracking-wider text-stone-400">보드 열기</span>
+                </span>
+              </a>
               {game.isCustom ? (
-                <>
-                  <button className="button small secondary" type="button" onClick={() => openEditGame(game)}>
+                <div className="mt-3 flex justify-end gap-2">
+                  <button className="rounded-xl border border-stone-800 px-3 py-2 text-xs font-bold text-stone-400 hover:bg-stone-800" type="button" onClick={() => openEditGame(game)}>
                     수정
                   </button>
-                  <button className="button small danger" type="button" onClick={() => deleteGame(game)}>
+                  <button className="rounded-xl border border-red-950/60 bg-red-950/30 px-3 py-2 text-xs font-bold text-red-300 hover:bg-red-950/50" type="button" onClick={() => deleteGame(game)}>
                     삭제
                   </button>
-                </>
-              ) : (
-                <button className="button small secondary" type="button" onClick={() => openEditGame(game)}>
-                  설정
-                </button>
-              )}
-            </div>
-          </article>
-        ))}
-      </section>
+                </div>
+              ) : null}
+            </article>
+          ))}
+        </section>
+      </div>
 
       {isGameEditorOpen ? (
-        <GameEditorModal game={editingGame} onClose={closeGameEditor} onSaveGame={saveGame} />
+        <GameEditorModal
+          key={editingGame?.id || "new-game"}
+          game={editingGame}
+          onClose={closeGameEditor}
+          onSaveGame={saveGame}
+        />
       ) : null}
     </main>
+  );
+}
+
+function AccountSummary({ syncState, user, isGuestMode, onLogout, onSaveToOhmesh }) {
+  return (
+    <div className="grid gap-3 border-t border-stone-800 pt-4">
+      <div>
+        <p className="break-words text-sm font-black text-stone-100">{isGuestMode ? "게스트 모드" : getUserDisplayName(user)}</p>
+        <SyncStatusBadge syncState={syncState} />
+      </div>
+      <button
+        className={isGuestMode ? "rounded-2xl bg-stone-100 px-4 py-2.5 text-sm font-black text-stone-950" : "rounded-2xl border border-stone-800 px-4 py-2.5 text-sm font-black text-stone-300"}
+        type="button"
+        onClick={isGuestMode ? onSaveToOhmesh : onLogout}
+      >
+        {isGuestMode ? "저장하기" : "로그아웃"}
+      </button>
+    </div>
+  );
+}
+
+function SyncStatusBadge({ syncState }) {
+  return (
+    <span className="mt-2 inline-flex rounded-full border border-stone-700 bg-stone-950 px-2.5 py-1 text-xs font-black text-stone-400" title={syncState.message}>
+      {getSyncStatusLabel(syncState)}
+    </span>
   );
 }
 
 function GameEditorModal({ game, onClose, onSaveGame }) {
   const [title, setTitle] = useState(game?.title || "");
   const [description, setDescription] = useState(game?.description || "");
-  const [uiTemplate, setUITemplate] = useState(normalizeUITemplate(game?.uiTemplate));
   const isEditing = Boolean(game);
-  const isBuiltInGame = Boolean(game && !game.isCustom);
 
   useEffect(() => {
     function closeWithEscape(event) {
@@ -1722,76 +1616,51 @@ function GameEditorModal({ game, onClose, onSaveGame }) {
   function saveGame(event) {
     event.preventDefault();
 
-    const trimmedTitle = isBuiltInGame ? game.title : title.trim();
+    const trimmedTitle = title.trim();
     if (!trimmedTitle) return;
 
     onSaveGame({
       title: trimmedTitle,
       description: description.trim(),
-      uiTemplate,
     });
   }
 
   return (
-    <div className="modal-backdrop" role="presentation" onClick={onClose}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-5 backdrop-blur-sm" role="presentation" onClick={onClose}>
       <section
-        className="modal-card game-editor-modal"
+        className="w-full max-w-lg rounded-[2rem] border border-stone-800 bg-stone-950 p-5 text-stone-100 shadow-2xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="game-editor-title"
         onClick={(event) => event.stopPropagation()}
       >
-        <form className="game-editor-form" onSubmit={saveGame}>
-          <div className="modal-header">
+        <form className="grid gap-4" onSubmit={saveGame}>
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="eyebrow">게임 관리</p>
-              <h2 id="game-editor-title">{isBuiltInGame ? "게임 설정" : isEditing ? "게임 수정" : "게임 추가"}</h2>
+              <p className="mb-1 text-xs font-black uppercase tracking-wider text-stone-500">게임 관리</p>
+              <h2 id="game-editor-title" className="text-2xl font-black">{isEditing ? "게임 수정" : "게임 추가"}</h2>
             </div>
-            <button className="button small secondary" type="button" onClick={onClose}>
-              닫기
+            <button className="rounded-2xl border border-stone-800 bg-stone-900 p-3 hover:bg-stone-800" type="button" onClick={onClose}>
+              <X className="h-5 w-5" />
             </button>
           </div>
 
-          {isBuiltInGame ? (
-            <div className="locked-game-summary">
-              <span>게임</span>
-              <strong>{game.title}</strong>
-            </div>
-          ) : (
-            <>
-              <label className="field">
-                <span>제목</span>
-                <input value={title} onChange={(event) => setTitle(event.target.value)} required />
-              </label>
-
-              <label className="field">
-                <span>설명</span>
-                <textarea
-                  value={description}
-                  onChange={(event) => setDescription(event.target.value)}
-                  rows="3"
-                />
-              </label>
-            </>
-          )}
-
-          <label className="field">
-            <span>화면 템플릿</span>
-            <select value={uiTemplate} onChange={(event) => setUITemplate(normalizeUITemplate(event.target.value))}>
-              {uiTemplateOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+          <label className="grid gap-1.5">
+            <span className="text-xs font-black text-stone-500">제목</span>
+            <input className="rounded-2xl border border-stone-800 bg-stone-900 px-4 py-3 text-sm font-bold outline-none focus:border-stone-500" value={title} onChange={(event) => setTitle(event.target.value)} required />
           </label>
 
-          <div className="button-row">
-            <button className="button secondary" type="button" onClick={onClose}>
+          <label className="grid gap-1.5">
+            <span className="text-xs font-black text-stone-500">설명</span>
+            <textarea className="h-24 resize-none rounded-2xl border border-stone-800 bg-stone-900 px-4 py-3 text-sm outline-none focus:border-stone-500" value={description} onChange={(event) => setDescription(event.target.value)} />
+          </label>
+
+          <div className="flex justify-end gap-2">
+            <button className="rounded-2xl px-4 py-3 text-sm font-black text-stone-500 hover:bg-stone-900" type="button" onClick={onClose}>
               취소
             </button>
-            <button className="button primary" type="submit">
-              {isBuiltInGame ? "설정 저장" : isEditing ? "수정 저장" : "게임 추가"}
+            <button className="rounded-2xl bg-stone-100 px-5 py-3 text-sm font-black text-stone-950 hover:bg-white" type="submit">
+              {isEditing ? "수정 저장" : "게임 추가"}
             </button>
           </div>
         </form>
@@ -1802,47 +1671,23 @@ function GameEditorModal({ game, onClose, onSaveGame }) {
 
 function GameCover({ game, className }) {
   if (game.artwork) {
-    return <img className={className} src={game.artwork} alt="" />;
+    return <img className={`${className} object-cover`} src={game.artwork} alt="" />;
   }
 
   return (
     <div
-      className={`${className} generated-game-cover`}
-      style={{ "--cover-accent": getGameAccentColor(game.id) }}
+      className={`${className} grid place-items-center overflow-hidden border border-stone-700 bg-stone-900 text-stone-100`}
+      style={{ borderTop: `7px solid ${getGameAccentColor(game.id)}` }}
       aria-hidden="true"
     >
-      <span>{getGameCoverLabel(game)}</span>
+      <span className="grid h-12 w-12 place-items-center rounded-full border border-stone-700 bg-stone-800 text-lg font-black">
+        {getGameCoverLabel(game)}
+      </span>
     </div>
   );
 }
 
-function AccountSummary({ syncState, user, isGuestMode, onLogout, onSaveToOhmesh }) {
-  return (
-    <div className="account-summary">
-      <div>
-        <p className="account-name">{isGuestMode ? "게스트 모드" : getUserDisplayName(user)}</p>
-        <SyncStatusBadge syncState={syncState} />
-      </div>
-      <button
-        className={`button small ${isGuestMode ? "primary" : "secondary"}`}
-        type="button"
-        onClick={isGuestMode ? onSaveToOhmesh : onLogout}
-      >
-        {isGuestMode ? "저장하기" : "로그아웃"}
-      </button>
-    </div>
-  );
-}
-
-function SyncStatusBadge({ syncState }) {
-  return (
-    <span className={`sync-badge ${syncState.status}`} title={syncState.message}>
-      {getSyncStatusLabel(syncState)}
-    </span>
-  );
-}
-
-function StudyGamePage({
+function StudyBoardPage({
   game,
   data,
   setData,
@@ -1853,204 +1698,52 @@ function StudyGamePage({
   onLogout,
   onSaveToOhmesh,
 }) {
-  const [editingSentenceId, setEditingSentenceId] = useState(null);
-  const [sentenceForm, setSentenceForm] = useState(createEmptySentenceForm());
-  const [editingCharacterId, setEditingCharacterId] = useState(null);
-  const [characterForm, setCharacterForm] = useState(createEmptyCharacterForm());
-  const [isGuideOpen, setIsGuideOpen] = useState(false);
-  const [isStatsOpen, setIsStatsOpen] = useState(false);
-  const [isFamilyTreeOpen, setIsFamilyTreeOpen] = useState(false);
-  const [isStoryDrawerOpen, setIsStoryDrawerOpen] = useState(false);
-  const [isVocabularyDrawerOpen, setIsVocabularyDrawerOpen] = useState(false);
-  const isEdithFinch = game.id === EDITH_FINCH_ID;
-  const isCardPopupTemplate = data.uiTemplate === CARD_POPUP_UI_TEMPLATE;
-  const guide = getGameGuide(game);
-  const defaultVocabulary = createDefaultGameNoteData(game.id).vocabulary;
+  const [openedSentenceId, setOpenedSentenceId] = useState(null);
+  const [isNewSentenceOpen, setIsNewSentenceOpen] = useState(false);
+  const [openedCharacterId, setOpenedCharacterId] = useState(null);
+  const [wordForm, setWordForm] = useState({ open: false, mode: "add", word: null });
+  const [addCharacterOpen, setAddCharacterOpen] = useState(false);
+  const boardRef = useRef(null);
 
-  const sentenceCount = data.sentences.length;
-  const vocabularyCount = data.vocabulary.length;
-  const mySentenceCount = data.sentences.filter((sentence) => sentence.mySentence.trim()).length;
-  const practicedSentenceCount = data.sentences.filter((sentence) => sentence.practiced).length;
-  const progressScore = sentenceCount + vocabularyCount + mySentenceCount + practicedSentenceCount;
-  const studyStats = [
-    {
-      label: "저장 문장",
-      value: sentenceCount,
-      description: "게임에서 발견해 저장한 영어 원문 문장입니다.",
-    },
-    {
-      label: "단어",
-      value: vocabularyCount,
-      description: "알아두어야 할 단어 목록에 남긴 항목입니다.",
-    },
-    {
-      label: "내 문장",
-      value: mySentenceCount,
-      description: "게임 문장을 내 상황에 맞게 바꿔 쓴 문장입니다.",
-    },
-    {
-      label: "연습 완료",
-      value: practicedSentenceCount,
-      description: "뜻을 알고 소리 내서 연습했다고 체크한 문장입니다.",
-    },
-    {
-      label: "진행 점수",
-      value: `${progressScore}점`,
-      description: "저장 문장, 단어, 내 문장, 연습 완료를 합친 간단한 진행 지표입니다.",
-    },
-  ];
+  const openedSentence = data.sentences.find((sentence) => sentence.id === openedSentenceId) || null;
+  const openedCharacter = data.characters.find((character) => character.id === openedCharacterId) || null;
 
-  function toggleMissionCheck(missionId) {
-    setData((previousData) => ({
-      ...previousData,
-      missionChecks: {
-        ...createDefaultMissionChecks(),
-        ...previousData.missionChecks,
-        [missionId]: !previousData.missionChecks?.[missionId],
-      },
-    }));
+  function openNewSentence() {
+    setOpenedSentenceId(null);
+    setIsNewSentenceOpen(true);
   }
 
-  function updateStudyMemo(field, value) {
-    setData((previousData) => ({
-      ...previousData,
-      [field]: value,
-    }));
+  function closeSentenceModal() {
+    setOpenedSentenceId(null);
+    setIsNewSentenceOpen(false);
   }
 
-  function updateVocabularyFromText(vocabularyText) {
-    setData((previousData) => ({
-      ...previousData,
-      vocabulary: parseVocabularyText(vocabularyText, previousData.vocabulary),
-    }));
-  }
+  function saveSentence(sentenceDraft) {
+    setData((previousData) => {
+      if (sentenceDraft.id) {
+        return {
+          ...previousData,
+          sentences: previousData.sentences.map((sentence) =>
+            sentence.id === sentenceDraft.id ? normalizeSentence({ ...sentence, ...sentenceDraft }) : sentence
+          ),
+        };
+      }
 
-  function updateSentenceForm(field, value) {
-    setSentenceForm((previousForm) => ({
-      ...previousForm,
-      [field]: value,
-    }));
-  }
-
-  function resetSentenceForm() {
-    setSentenceForm(createEmptySentenceForm());
-    setEditingSentenceId(null);
-  }
-
-  function updateCharacterForm(field, value) {
-    setCharacterForm((previousForm) => ({
-      ...previousForm,
-      [field]: value,
-    }));
-  }
-
-  function resetCharacterForm() {
-    setCharacterForm(createEmptyCharacterForm());
-    setEditingCharacterId(null);
-  }
-
-  function saveCharacter(event) {
-    event.preventDefault();
-
-    const name = characterForm.name.trim();
-    if (!name) return;
-
-    const description = characterForm.description.trim();
-    const timestamp = new Date().toISOString();
-
-    if (editingCharacterId) {
-      setData((previousData) => ({
-        ...previousData,
-        characters: (previousData.characters || []).map((character) =>
-          character.id === editingCharacterId
-            ? {
-                ...character,
-                name,
-                description,
-                updatedAt: timestamp,
-              }
-            : character
-        ),
-      }));
-    } else {
-      const newCharacter = {
-        id: createCharacterId(),
-        name,
-        description,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-      };
-
-      setData((previousData) => ({
-        ...previousData,
-        characters: [newCharacter, ...(previousData.characters || [])],
-      }));
-    }
-
-    resetCharacterForm();
-  }
-
-  function editCharacter(character) {
-    setEditingCharacterId(character.id);
-    setCharacterForm({
-      name: character.name,
-      description: character.description,
-    });
-  }
-
-  function deleteCharacter(characterId) {
-    setData((previousData) => ({
-      ...previousData,
-      characters: (previousData.characters || []).filter((character) => character.id !== characterId),
-    }));
-    if (characterId === editingCharacterId) resetCharacterForm();
-  }
-
-  function saveSentence(event) {
-    event.preventDefault();
-
-    const original = sentenceForm.original.trim();
-    if (!original) return;
-
-    if (editingSentenceId) {
-      setData((previousData) => ({
-        ...previousData,
-        sentences: previousData.sentences.map((sentence) =>
-          sentence.id === editingSentenceId
-            ? {
-                ...sentence,
-                original,
-                meaning: sentenceForm.meaning.trim(),
-                mySentence: sentenceForm.mySentence.trim(),
-              }
-            : sentence
-        ),
-      }));
-    } else {
-      const newSentence = {
-        id: createId(),
-        original,
-        meaning: sentenceForm.meaning.trim(),
-        mySentence: sentenceForm.mySentence.trim(),
+      const defaultPosition = getDefaultBoardPosition(previousData.sentences.length);
+      const newSentence = normalizeSentence({
+        ...sentenceDraft,
+        id: createId("sentence"),
+        x: defaultPosition.x,
+        y: defaultPosition.y,
         practiced: false,
-      };
+      });
 
-      setData((previousData) => ({
+      return {
         ...previousData,
         sentences: [newSentence, ...previousData.sentences],
-      }));
-    }
-
-    resetSentenceForm();
-  }
-
-  function editSentence(sentence) {
-    setEditingSentenceId(sentence.id);
-    setSentenceForm({
-      original: sentence.original,
-      meaning: sentence.meaning,
-      mySentence: sentence.mySentence,
+      };
     });
+    closeSentenceModal();
   }
 
   function deleteSentence(sentenceId) {
@@ -2058,983 +1751,797 @@ function StudyGamePage({
       ...previousData,
       sentences: previousData.sentences.filter((sentence) => sentence.id !== sentenceId),
     }));
+    closeSentenceModal();
   }
 
-  function toggleSentencePracticed(sentenceId) {
+  function moveSentence(sentenceId, x, y) {
     setData((previousData) => ({
       ...previousData,
       sentences: previousData.sentences.map((sentence) =>
-        sentence.id === sentenceId ? { ...sentence, practiced: !sentence.practiced } : sentence
+        sentence.id === sentenceId ? { ...sentence, x: clampBoardPercent(x), y: clampBoardPercent(y) } : sentence
       ),
     }));
   }
 
-  function speakEnglish(text) {
-    if (!text || typeof window === "undefined" || !window.speechSynthesis) return;
+  function saveVocabularyEntry(entryDraft) {
+    setData((previousData) => {
+      if (entryDraft.id) {
+        return {
+          ...previousData,
+          vocabulary: previousData.vocabulary.map((entry) =>
+            entry.id === entryDraft.id ? normalizeVocabularyEntry({ ...entry, ...entryDraft }) : entry
+          ).filter(Boolean),
+        };
+      }
 
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "en-US";
-    utterance.rate = 0.8;
-    window.speechSynthesis.speak(utterance);
+      const newEntry = normalizeVocabularyEntry({
+        ...entryDraft,
+        id: createVocabularyId(),
+      });
+
+      return {
+        ...previousData,
+        vocabulary: newEntry ? [newEntry, ...previousData.vocabulary] : previousData.vocabulary,
+      };
+    });
+    setWordForm({ open: false, mode: "add", word: null });
+  }
+
+  function deleteVocabularyEntry(entryId) {
+    setData((previousData) => ({
+      ...previousData,
+      vocabulary: previousData.vocabulary.filter((entry) => entry.id !== entryId),
+    }));
+    setWordForm({ open: false, mode: "add", word: null });
+  }
+
+  function saveCharacter(characterDraft) {
+    const timestamp = new Date().toISOString();
+
+    setData((previousData) => {
+      if (characterDraft.id) {
+        return {
+          ...previousData,
+          characters: previousData.characters.map((character) =>
+            character.id === characterDraft.id
+              ? normalizeCharacter({ ...character, ...characterDraft, updatedAt: timestamp })
+              : character
+          ).filter(Boolean),
+        };
+      }
+
+      const newCharacter = normalizeCharacter({
+        ...characterDraft,
+        id: createCharacterId(),
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      });
+
+      return {
+        ...previousData,
+        characters: newCharacter ? [newCharacter, ...previousData.characters] : previousData.characters,
+      };
+    });
+    setAddCharacterOpen(false);
+    setOpenedCharacterId(null);
+  }
+
+  function deleteCharacter(characterId) {
+    setData((previousData) => ({
+      ...previousData,
+      characters: previousData.characters.filter((character) => character.id !== characterId),
+    }));
+    setOpenedCharacterId(null);
   }
 
   return (
-    <div className="page-stack study-page">
-      <header className="page-header">
-        <div className="study-title">
-          <GameCover game={game} className="study-game-art" />
-          <div className="study-title-copy">
-            <p className="eyebrow">공부 중 · {isGuestMode ? "게스트 모드" : getUserDisplayName(user)}</p>
-            <h1>{game.title}</h1>
-          </div>
-        </div>
-        <div className="page-header-side">
-          <SyncStatusBadge syncState={syncState} />
-          <button className="button icon-button secondary" type="button" onClick={onGoHome} aria-label="홈" title="홈">
-            ⌂
-          </button>
-          <button
-            className="button icon-button secondary"
-            type="button"
-            onClick={() => setIsGuideOpen(true)}
-            aria-label="플레이 미션 보기"
-            title="플레이 미션 보기"
-          >
-            ☑
-          </button>
-          <button
-            className="button icon-button secondary"
-            type="button"
-            onClick={() => setIsStatsOpen(true)}
-            aria-label="통계 보기"
-            title="통계 보기"
-          >
-            ▦
-          </button>
-          <button
-            className="button icon-button secondary"
-            type="button"
-            onClick={() => setIsStoryDrawerOpen(true)}
-            aria-label="스토리 메모"
-            aria-expanded={isStoryDrawerOpen}
-            aria-controls="story-memo-drawer"
-            title="스토리 메모"
-          >
-            ✎
-          </button>
-          <button
-            className={`button header-logout-button ${isGuestMode ? "primary" : "secondary"}`}
-            type="button"
-            onClick={isGuestMode ? onSaveToOhmesh : onLogout}
-          >
-            {isGuestMode ? "저장하기" : "로그아웃"}
-          </button>
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-stone-950 font-sans text-stone-100">
+      <StudyHeader
+        game={game}
+        syncState={syncState}
+        user={user}
+        isGuestMode={isGuestMode}
+        onAddNote={openNewSentence}
+        onBackToGames={onGoHome}
+        onLogout={onLogout}
+        onSaveToOhmesh={onSaveToOhmesh}
+      />
       {syncState.status === "error" ? (
-        <section className="panel notice-panel error">
-          <p>{syncState.message || "ohmesh 저장에 실패했습니다. 다시 수정하면 저장을 재시도합니다."}</p>
-        </section>
-      ) : null}
-
-      <VocabularyPanel
-        vocabulary={data.vocabulary}
-        onOpenEditor={() => setIsVocabularyDrawerOpen(true)}
-      />
-
-      <section className="study-layout">
-        <div className="study-main">
-          <SentenceForm
-            form={sentenceForm}
-            editingSentenceId={editingSentenceId}
-            onCancelEdit={resetSentenceForm}
-            onSaveSentence={saveSentence}
-            onUpdateForm={updateSentenceForm}
-          />
-
-          <div className="study-main-grid">
-            <div className="left-column">
-              {isCardPopupTemplate ? null : (
-                <MissionPanel missionChecks={data.missionChecks} onToggleMission={toggleMissionCheck} />
-              )}
-              <CharacterPanel
-                characters={data.characters}
-                form={characterForm}
-                editingCharacterId={editingCharacterId}
-                onCancelEdit={resetCharacterForm}
-                onDeleteCharacter={deleteCharacter}
-                onEditCharacter={editCharacter}
-                onSaveCharacter={saveCharacter}
-                onUpdateForm={updateCharacterForm}
-              />
-            </div>
-
-            <div className="right-column">
-              <SentenceList
-                sentences={data.sentences}
-                uiTemplate={data.uiTemplate}
-                onDeleteSentence={deleteSentence}
-                onEditSentence={editSentence}
-                onSpeakEnglish={speakEnglish}
-                onTogglePracticed={toggleSentencePracticed}
-              />
-            </div>
-          </div>
+        <div className="border-b border-red-950/70 bg-red-950/40 px-6 py-3 text-sm font-bold text-red-200">
+          {syncState.message || "ohmesh 저장에 실패했습니다. 다시 수정하면 저장을 재시도합니다."}
         </div>
-      </section>
-
-      <GuideModal guide={guide} isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
-      <StatsModal stats={studyStats} isOpen={isStatsOpen} onClose={() => setIsStatsOpen(false)} />
-      <StoryMemoDrawer
-        storyMemo={data.storyMemo}
-        isOpen={isStoryDrawerOpen}
-        onClose={() => setIsStoryDrawerOpen(false)}
-        onUpdateMemo={updateStudyMemo}
-      />
-      {isVocabularyDrawerOpen ? (
-        <VocabularyEditorDrawer
+      ) : null}
+      <div className="flex h-[calc(100vh-76px)] min-w-0">
+        <Board
+          boardRef={boardRef}
+          sentences={data.sentences}
           vocabulary={data.vocabulary}
-          defaultVocabulary={defaultVocabulary}
-          onClose={() => setIsVocabularyDrawerOpen(false)}
-          onSaveVocabulary={updateVocabularyFromText}
+          characters={data.characters}
+          onAddCharacter={() => setAddCharacterOpen(true)}
+          onAddWord={() => setWordForm({ open: true, mode: "add", word: null })}
+          onMoveSentence={moveSentence}
+          onOpenCharacter={(character) => setOpenedCharacterId(character.id)}
+          onOpenNote={(sentence) => setOpenedSentenceId(sentence.id)}
+          onOpenWord={(word) => setWordForm({ open: true, mode: "edit", word })}
+        />
+      </div>
+      {isNewSentenceOpen || openedSentence ? (
+        <SentenceBoardModal
+          key={isNewSentenceOpen ? "new-sentence" : openedSentence.id}
+          sentence={isNewSentenceOpen ? null : openedSentence}
+          vocabulary={data.vocabulary}
+          onClose={closeSentenceModal}
+          onDeleteSentence={deleteSentence}
+          onSaveSentence={saveSentence}
         />
       ) : null}
-      {isEdithFinch ? (
-        <FamilyTreeReference
-          isOpen={isFamilyTreeOpen}
-          onClose={() => setIsFamilyTreeOpen(false)}
-          onOpen={() => setIsFamilyTreeOpen(true)}
+      {openedCharacter ? (
+        <CharacterModal
+          key={openedCharacter.id}
+          character={openedCharacter}
+          onClose={() => setOpenedCharacterId(null)}
+          onDeleteCharacter={deleteCharacter}
+          onSaveCharacter={saveCharacter}
         />
+      ) : null}
+      {wordForm.open ? (
+        <WordFormModal
+          key={wordForm.word?.id || "new-word"}
+          mode={wordForm.mode}
+          word={wordForm.word}
+          onClose={() => setWordForm({ open: false, mode: "add", word: null })}
+          onDeleteWord={deleteVocabularyEntry}
+          onSaveWord={saveVocabularyEntry}
+        />
+      ) : null}
+      {addCharacterOpen ? (
+        <AddCharacterModal onClose={() => setAddCharacterOpen(false)} onSaveCharacter={saveCharacter} />
       ) : null}
     </div>
   );
 }
 
-function FamilyTreeReference({ isOpen, onClose, onOpen }) {
-  const [hasImage, setHasImage] = useState(true);
-  const imageSrc = "/edith-finch-family-tree.png";
-
-  useEffect(() => {
-    if (!isOpen) return undefined;
-
-    function closeWithEscape(event) {
-      if (event.key === "Escape") onClose();
-    }
-
-    window.addEventListener("keydown", closeWithEscape);
-    return () => window.removeEventListener("keydown", closeWithEscape);
-  }, [isOpen, onClose]);
-
-  function renderReferenceImage(className) {
-    if (!hasImage) {
-      return (
-        <div className={`${className} family-tree-missing`} role="img" aria-label="Finch 가족 트리 이미지 없음">
-          <span>캡처 이미지 필요</span>
+function StudyHeader({
+  game,
+  syncState,
+  user,
+  isGuestMode,
+  onAddNote,
+  onBackToGames,
+  onLogout,
+  onSaveToOhmesh,
+}) {
+  return (
+    <header className="relative z-20 flex h-[76px] items-center justify-between border-b border-stone-800 bg-stone-950/90 px-6 text-stone-100 backdrop-blur">
+      <div className="flex min-w-0 items-center gap-3">
+        <button
+          onClick={onBackToGames}
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-stone-800 bg-stone-900 text-stone-300 hover:bg-stone-800 hover:text-white"
+          title="게임 선택으로 이동"
+          type="button"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        <div className="min-w-0">
+          <p className="truncate text-2xl font-black tracking-tight">{game.title}</p>
+          <p className="text-xs text-stone-500">공부 중 · {isGuestMode ? "게스트 모드" : getUserDisplayName(user)}</p>
         </div>
-      );
-    }
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="hidden items-center gap-2 rounded-2xl border border-stone-800 bg-stone-900 px-3 py-2 text-sm text-stone-500 lg:flex">
+          <Search className="h-4 w-4" />
+          <span>문장 / 영단어 / 등장인물 검색</span>
+        </div>
+        <SyncStatusBadge syncState={syncState} />
+        <button onClick={onAddNote} className="flex items-center gap-2 rounded-2xl bg-stone-100 px-4 py-3 text-sm font-bold text-stone-950 shadow-sm hover:bg-white" type="button">
+          <Plus className="h-4 w-4" />노트 추가
+        </button>
+        <button
+          className={isGuestMode ? "rounded-2xl bg-amber-200 px-4 py-3 text-sm font-black text-stone-950" : "rounded-2xl border border-stone-800 bg-stone-900 px-4 py-3 text-sm font-black text-stone-300"}
+          type="button"
+          onClick={isGuestMode ? onSaveToOhmesh : onLogout}
+        >
+          {isGuestMode ? "저장하기" : "로그아웃"}
+        </button>
+      </div>
+    </header>
+  );
+}
 
-    return (
-      <img
-        className={className}
-        src={imageSrc}
-        alt="The Finches family tree"
-        onError={() => setHasImage(false)}
-      />
-    );
+function Board({
+  boardRef,
+  sentences,
+  vocabulary,
+  characters,
+  onAddCharacter,
+  onAddWord,
+  onMoveSentence,
+  onOpenCharacter,
+  onOpenNote,
+  onOpenWord,
+}) {
+  const [noteZIndexes, setNoteZIndexes] = useState(() =>
+    Object.fromEntries(sentences.map((sentence, index) => [sentence.id, index + 1]))
+  );
+  const topZIndexRef = useRef(sentences.length + 1);
+
+  const bringNoteToFront = (noteId) => {
+    topZIndexRef.current += 1;
+    setNoteZIndexes((previous) => ({ ...previous, [noteId]: topZIndexRef.current }));
+  };
+
+  return (
+    <main ref={boardRef} className="relative flex-1 overflow-hidden bg-stone-900">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(245,158,11,0.18),transparent_28%),radial-gradient(circle_at_80%_60%,rgba(120,113,108,0.22),transparent_30%)]" />
+      <div className="absolute inset-5 rounded-[2rem] border border-amber-950/50 bg-[linear-gradient(90deg,rgba(120,53,15,.18)_1px,transparent_1px),linear-gradient(rgba(120,53,15,.18)_1px,transparent_1px)] bg-[size:32px_32px] shadow-2xl" />
+
+      <div className="relative z-10 h-[calc(100vh-76px)]">
+        {sentences.length === 0 ? (
+          <div className="absolute left-8 top-8 max-w-md rounded-3xl border border-dashed border-amber-900/50 bg-stone-950/70 p-6 text-stone-400">
+            <p className="text-lg font-black text-stone-100">아직 보드 노트가 없습니다.</p>
+            <p className="mt-2 leading-7">상단의 노트 추가를 눌러 게임에서 발견한 영어 문장을 붙여보세요.</p>
+          </div>
+        ) : null}
+        {sentences.map((sentence, index) => (
+          <NoteCard
+            key={sentence.id}
+            boardRef={boardRef}
+            sentence={sentence}
+            sentenceIndex={index}
+            vocabulary={vocabulary}
+            onMove={onMoveSentence}
+            onOpen={onOpenNote}
+            zIndex={noteZIndexes[sentence.id] ?? index + 1}
+            onFocus={bringNoteToFront}
+          />
+        ))}
+        <WordBoardNote vocabulary={vocabulary} onAddWord={onAddWord} onOpenWord={onOpenWord} />
+        <div className="absolute bottom-5 left-6 right-6">
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {characters.map((character) => (
+              <CharacterCard key={character.id} character={character} onOpen={onOpenCharacter} />
+            ))}
+            <button onClick={onAddCharacter} className="flex w-24 shrink-0 items-center justify-center gap-1 rounded-2xl border border-dashed border-slate-700/70 bg-transparent px-3 py-2 text-xs font-bold text-slate-400 hover:bg-slate-900/50" type="button">
+              <Plus className="h-3.5 w-3.5" />추가
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function NoteCard({ boardRef, sentence, sentenceIndex, vocabulary, onMove, onOpen, zIndex, onFocus }) {
+  const dragControls = useDragControls();
+  const words = findVocabularyForSentence(sentence, vocabulary);
+
+  function finishDrag(info) {
+    const boardRect = boardRef.current?.getBoundingClientRect();
+    if (!boardRect) return;
+
+    const x = ((info.point.x - boardRect.left) / boardRect.width) * 100;
+    const y = ((info.point.y - boardRect.top) / boardRect.height) * 100;
+    onMove(sentence.id, x, y);
   }
 
   return (
-    <>
-      <button className="family-tree-float" type="button" onClick={onOpen} aria-label="Finch 가족 트리 크게 보기">
-        {renderReferenceImage("family-tree-thumb")}
-        <span>The Finches</span>
+    <motion.div
+      drag
+      dragControls={dragControls}
+      dragListener={false}
+      dragMomentum={false}
+      initial={{ opacity: 0, scale: 0.96 }}
+      animate={{ opacity: 1, scale: 1 }}
+      whileHover={{ rotate: -0.5 }}
+      whileDrag={{ scale: 1.03, rotate: 1 }}
+      onDragEnd={(event, info) => {
+        event.stopPropagation();
+        finishDrag(info);
+      }}
+      onPointerDown={() => onFocus(sentence.id)}
+      className="absolute w-64 rounded-2xl border border-amber-900/40 bg-amber-100/95 p-4 text-left text-stone-900 shadow-2xl hover:bg-amber-50"
+      style={{ left: `${sentence.x}%`, top: `${sentence.y}%`, zIndex }}
+    >
+      <button
+        onPointerDown={(event) => {
+          event.stopPropagation();
+          onFocus(sentence.id);
+          dragControls.start(event);
+        }}
+        className="absolute right-2 top-2 grid h-8 w-8 cursor-grab place-items-center rounded-xl bg-black/10 text-stone-600 hover:bg-black/15 active:cursor-grabbing"
+        title="노트 이동"
+        type="button"
+      >
+        <GripVertical className="h-4 w-4" />
       </button>
 
-      {isOpen ? (
-        <div className="reference-backdrop" role="presentation" onClick={onClose}>
-          <section
-            className="reference-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="family-tree-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="reference-header">
-              <div>
-                <p className="eyebrow">참고 이미지</p>
-                <h2 id="family-tree-title">The Finches</h2>
+      <button onClick={() => onOpen(sentence)} className="block w-full pr-8 text-left" type="button">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <Pin className="h-4 w-4 shrink-0" />
+            <span className="truncate text-[11px] font-black uppercase tracking-wider opacity-60">
+              {getSentenceChapter(sentence, sentenceIndex)}
+            </span>
+          </div>
+          <StickyNote className="h-4 w-4 opacity-60" />
+        </div>
+        <h3 className="text-base font-black leading-tight">{getSentenceTitle(sentence)}</h3>
+        <p className="mt-2 line-clamp-3 text-xs leading-relaxed opacity-75">{getSentenceSummary(sentence)}</p>
+        <div className="mt-4 flex flex-wrap gap-1.5">
+          {words.slice(0, 3).map((entry) => (
+            <span key={entry.id} className="rounded-full bg-black/10 px-2 py-1 text-[10px] font-black">
+              {entry.word}: {entry.meaning}
+            </span>
+          ))}
+        </div>
+      </button>
+    </motion.div>
+  );
+}
+
+function WordBoardNote({ vocabulary, onAddWord, onOpenWord }) {
+  return (
+    <motion.section
+      initial={{ opacity: 0, scale: 0.96, y: 16 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      whileHover={{ y: -3 }}
+      className="absolute bottom-5 right-8 top-10 z-[60] flex w-[360px] flex-col rounded-3xl border border-stone-700 bg-stone-950/95 p-4 text-stone-100 shadow-2xl backdrop-blur"
+    >
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <Pin className="h-4 w-4 shrink-0 text-stone-500" />
+          <h3 className="text-lg font-black leading-tight text-stone-100">영단어</h3>
+          <span className="rounded-full bg-stone-800 px-2 py-1 text-[11px] font-black text-stone-400">{vocabulary.length}개</span>
+        </div>
+        <button onClick={onAddWord} className="flex items-center gap-1 rounded-xl bg-stone-800 px-2 py-1.5 text-[11px] font-black text-stone-300 hover:bg-stone-700" title="추가" type="button">
+          <Plus className="h-3.5 w-3.5" />추가
+        </button>
+      </div>
+
+      <div className="grid min-h-0 flex-1 grid-cols-2 content-start gap-1.5 overflow-y-auto pr-1">
+        {vocabulary.length === 0 ? (
+          <p className="col-span-2 rounded-2xl border border-dashed border-stone-800 p-4 text-sm text-stone-500">저장한 단어가 없습니다.</p>
+        ) : (
+          vocabulary.map((entry) => (
+            <button
+              key={entry.id}
+              onClick={() => onOpenWord(entry)}
+              className="rounded-xl border border-stone-800 bg-stone-900 px-2 py-1.5 text-left hover:bg-stone-800 hover:shadow-sm"
+              type="button"
+            >
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="truncate text-xs font-black text-stone-100">{entry.word}</p>
+                <p className="shrink-0 text-[11px] text-stone-400">{entry.meaning}</p>
               </div>
-              <button className="button small secondary" type="button" onClick={onClose}>
-                닫기
+            </button>
+          ))
+        )}
+      </div>
+    </motion.section>
+  );
+}
+
+function CharacterCard({ character, onOpen }) {
+  return (
+    <motion.button
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -2 }}
+      onClick={() => onOpen(character)}
+      className="w-36 shrink-0 rounded-2xl border border-slate-700/70 bg-slate-950/75 p-2 text-left text-stone-100 shadow-lg backdrop-blur hover:bg-slate-900/90"
+      type="button"
+    >
+      <div className="flex items-center gap-2">
+        <div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl border border-slate-700 bg-slate-800 text-slate-400">
+          <UserRound className="h-5 w-5" />
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-xs font-black">{character.name}</p>
+          <p className="mt-0.5 truncate text-[10px] text-slate-500">{character.description || "인물 메모"}</p>
+        </div>
+      </div>
+    </motion.button>
+  );
+}
+
+function SentenceBoardModal({ sentence, vocabulary, onClose, onDeleteSentence, onSaveSentence }) {
+  const [draft, setDraft] = useState(createSentenceDraft(sentence));
+  const isEdit = Boolean(sentence);
+
+  function updateDraft(field, value) {
+    setDraft((previousDraft) => ({ ...previousDraft, [field]: value }));
+  }
+
+  function saveDraft() {
+    const original = draft.original.trim();
+    if (!original) return;
+
+    onSaveSentence({
+      ...draft,
+      original,
+      title: draft.title.trim(),
+      chapter: draft.chapter.trim(),
+      meaning: draft.meaning.trim(),
+      mySentence: draft.mySentence.trim(),
+    });
+  }
+
+  return (
+    <AnimatePresence>
+      <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed bottom-0 left-0 right-[400px] top-0 z-40 bg-black/70 p-6 backdrop-blur-sm"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 20 }}
+            className="flex h-full w-full flex-col overflow-hidden rounded-[2rem] border border-stone-700 bg-stone-950 text-stone-100 shadow-2xl"
+          >
+            <div className="flex h-14 items-center justify-between gap-4 border-b border-stone-800 px-5">
+              <div className="flex items-center gap-2 text-lg font-black tracking-tight">
+                <BookOpen className="h-5 w-5 text-amber-200/70" />노트
+              </div>
+              <button onClick={onClose} className="rounded-2xl border border-stone-800 bg-stone-900 p-2.5 hover:bg-stone-800" type="button">
+                <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="reference-image-wrap">{renderReferenceImage("family-tree-large")}</div>
-          </section>
-        </div>
-      ) : null}
-    </>
-  );
-}
 
-function VocabularyPanel({ vocabulary, onOpenEditor }) {
-  return (
-    <section className="panel word-panel">
-      <div className="word-panel-heading">
-        <div>
-          <h2>알아두어야 할 단어</h2>
-        </div>
-        <span className="small-badge">{vocabulary.length}개</span>
-      </div>
+            <div className="grid min-h-0 flex-1 grid-cols-[1.25fr_0.85fr] gap-4 overflow-hidden p-4">
+              <section className="grid min-h-0 gap-3 rounded-2xl border border-stone-800 bg-stone-900 p-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="grid gap-1.5">
+                    <span className="text-xs font-black text-stone-500">제목</span>
+                    <input className="rounded-xl border border-stone-800 bg-stone-950 px-3 py-2 text-sm font-bold outline-none focus:border-amber-700" value={draft.title} onChange={(event) => updateDraft("title", event.target.value)} placeholder="Old man and the sap" />
+                  </label>
+                  <label className="grid gap-1.5">
+                    <span className="text-xs font-black text-stone-500">챕터 / 장면</span>
+                    <input className="rounded-xl border border-stone-800 bg-stone-950 px-3 py-2 text-sm font-bold outline-none focus:border-amber-700" value={draft.chapter} onChange={(event) => updateDraft("chapter", event.target.value)} placeholder="Opening Scene" />
+                  </label>
+                </div>
 
-      <div className="word-panel-content">
-        <button className="button small secondary word-edit-button" type="button" onClick={onOpenEditor}>
-          단어 수정
-        </button>
+                <label className="flex min-h-0 flex-col gap-1.5">
+                  <span className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-stone-500">
+                    <StickyNote className="h-4 w-4" />English
+                  </span>
+                  <textarea
+                    value={draft.original}
+                    onChange={(event) => updateDraft("original", event.target.value)}
+                    className="min-h-0 flex-1 resize-none rounded-xl border border-stone-800 bg-stone-950 px-4 py-3 text-lg leading-8 text-stone-100 outline-none focus:border-amber-700"
+                    placeholder="게임에서 발견한 영어 문장을 적습니다."
+                  />
+                </label>
+              </section>
 
-        <div className="word-entry-list" aria-label="단어장">
-          {vocabulary.length === 0 ? (
-            <p className="empty-message">아직 저장한 단어가 없습니다.</p>
-          ) : (
-            vocabulary.map((entry) => <VocabularyEntry key={entry.id} entry={entry} />)
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function VocabularyEntry({ entry }) {
-  return (
-    <p className="word-entry">
-      <strong>{entry.word}:</strong> {entry.meaning}
-    </p>
-  );
-}
-
-function VocabularyEditorDrawer({ vocabulary, defaultVocabulary, onClose, onSaveVocabulary }) {
-  const [draftText, setDraftText] = useState(() => formatVocabularyText(vocabulary));
-
-  useEffect(() => {
-    function closeWithEscape(event) {
-      if (event.key === "Escape") onClose();
-    }
-
-    window.addEventListener("keydown", closeWithEscape);
-    return () => window.removeEventListener("keydown", closeWithEscape);
-  }, [onClose]);
-
-  function saveVocabularyText(event) {
-    event.preventDefault();
-    onSaveVocabulary(draftText);
-    onClose();
-  }
-
-  function resetVocabularyText() {
-    setDraftText(formatVocabularyText(defaultVocabulary));
-  }
-
-  return (
-    <div className="story-drawer-layer" role="presentation" onClick={onClose}>
-      <aside
-        className="story-drawer-panel"
-        id="vocabulary-editor-drawer"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="vocabulary-editor-title"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <form className="drawer-form" onSubmit={saveVocabularyText}>
-          <div className="panel-heading">
-            <div>
-              <h2 id="vocabulary-editor-title">단어 수정</h2>
+              <aside className="grid min-h-0 gap-3">
+                <label className="flex min-h-0 flex-col gap-1.5 rounded-2xl border border-stone-800 bg-stone-900 p-3">
+                  <span className="text-xs font-black uppercase tracking-wider text-stone-500">한글 / 해석</span>
+                  <textarea
+                    value={draft.meaning}
+                    onChange={(event) => updateDraft("meaning", event.target.value)}
+                    className="min-h-0 flex-1 resize-none rounded-xl border border-stone-800 bg-stone-950 px-4 py-3 text-base leading-7 text-stone-200 outline-none focus:border-amber-700"
+                    placeholder="번역, 해석 설명, 문맥 설명을 적습니다."
+                  />
+                </label>
+                <label className="flex min-h-0 flex-col gap-1.5 rounded-2xl border border-stone-800 bg-stone-900 p-3">
+                  <span className="text-xs font-black uppercase tracking-wider text-stone-500">내 문장</span>
+                  <textarea
+                    value={draft.mySentence}
+                    onChange={(event) => updateDraft("mySentence", event.target.value)}
+                    className="min-h-0 flex-1 resize-none rounded-xl border border-stone-800 bg-stone-950 px-4 py-3 text-base leading-7 text-stone-200 outline-none focus:border-amber-700"
+                    placeholder="게임 문장을 내 상황에 맞게 바꿔 적습니다."
+                  />
+                </label>
+                <div className="rounded-2xl border border-stone-800 bg-stone-900 p-3">
+                  <p className="mb-2 text-xs font-black uppercase tracking-wider text-stone-500">연결 단어</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {findVocabularyForSentence(draft, vocabulary).map((entry) => (
+                      <span key={entry.id} className="rounded-full bg-stone-800 px-2 py-1 text-xs font-bold text-stone-300">
+                        {entry.word}: {entry.meaning}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </aside>
             </div>
-            <button className="button small secondary" type="button" onClick={onClose}>
-              닫기
-            </button>
-          </div>
 
-          <textarea
-            value={draftText}
-            onChange={(event) => setDraftText(event.target.value)}
-            aria-label="단어 수정"
-            placeholder={"remember: 기억하다\nafraid: 두려운"}
-          />
-
-          <div className="button-row">
-            <button className="button secondary" type="button" onClick={resetVocabularyText}>
-              리셋
-            </button>
-            <button className="button primary" type="submit">
-              저장
-            </button>
-          </div>
-        </form>
-      </aside>
-    </div>
-  );
-}
-
-function StoryMemoDrawer({ storyMemo, isOpen, onClose, onUpdateMemo }) {
-  useEffect(() => {
-    if (!isOpen) return undefined;
-
-    function closeWithEscape(event) {
-      if (event.key === "Escape") onClose();
-    }
-
-    window.addEventListener("keydown", closeWithEscape);
-    return () => window.removeEventListener("keydown", closeWithEscape);
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="story-drawer-layer" role="presentation" onClick={onClose}>
-      <aside
-        className="story-drawer-panel"
-        id="story-memo-drawer"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="story-memo-title"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="panel-heading">
-          <div>
-            <h2 id="story-memo-title">스토리 메모</h2>
-            <p>장면, 인물 관계, 다음에 기억할 내용을 적습니다.</p>
-          </div>
-          <button className="button small secondary" type="button" onClick={onClose}>
-            닫기
-          </button>
-        </div>
-
-        <textarea
-          value={storyMemo}
-          onChange={(event) => onUpdateMemo("storyMemo", event.target.value)}
-          aria-label="스토리 메모"
-          placeholder="오늘 본 장면, 인물 관계, 다음에 기억할 내용"
-        />
-      </aside>
-    </div>
-  );
-}
-
-function MissionPanel({ missionChecks, onToggleMission }) {
-  const completedMissionCount = missionItems.filter((item) => missionChecks?.[item.id]).length;
-
-  return (
-    <section className="panel">
-      <div className="panel-heading">
-        <div>
-          <h2>이번 플레이 미션</h2>
-          <p>게임 흐름을 지키면서 가볍게 챙길 목표입니다.</p>
-        </div>
-        <span className="small-badge">
-          {completedMissionCount}/{missionItems.length}
-        </span>
-      </div>
-
-      <div className="mission-list">
-        {missionItems.map((item) => (
-          <label key={item.id} className="mission-check">
-            <input
-              className="toggle-input"
-              type="checkbox"
-              checked={Boolean(missionChecks?.[item.id])}
-              onChange={() => onToggleMission(item.id)}
-            />
-            <span className="toggle-track" aria-hidden="true" />
-            <span className="toggle-copy">{item.label}</span>
-          </label>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function CharacterPanel({
-  characters,
-  form,
-  editingCharacterId,
-  onCancelEdit,
-  onDeleteCharacter,
-  onEditCharacter,
-  onSaveCharacter,
-  onUpdateForm,
-}) {
-  const safeCharacters = Array.isArray(characters) ? characters : [];
-
-  return (
-    <section className="panel character-panel">
-      <div className="panel-heading">
-        <div>
-          <h2>등장인물</h2>
-          <p>게임별 인물 이름과 짧은 설명을 정리합니다.</p>
-        </div>
-        <span className="small-badge">{safeCharacters.length}명</span>
-      </div>
-
-      <form className="character-form" onSubmit={onSaveCharacter}>
-        <label className="field">
-          <span>이름</span>
-          <input
-            value={form.name}
-            onChange={(event) => onUpdateForm("name", event.target.value)}
-            placeholder="Edith Finch"
-            required
-          />
-        </label>
-
-        <label className="field">
-          <span>설명</span>
-          <textarea
-            value={form.description}
-            onChange={(event) => onUpdateForm("description", event.target.value)}
-            placeholder="기억해둘 관계나 특징"
-            rows="3"
-          />
-        </label>
-
-        <div className="button-row">
-          {editingCharacterId ? (
-            <button className="button secondary" type="button" onClick={onCancelEdit}>
-              취소
-            </button>
-          ) : null}
-          <button className="button primary" type="submit">
-            {editingCharacterId ? "수정 저장" : "인물 추가"}
-          </button>
-        </div>
-      </form>
-
-      <div className="character-list">
-        {safeCharacters.length === 0 ? (
-          <p className="empty-message">아직 저장한 등장인물이 없습니다.</p>
-        ) : (
-          safeCharacters.map((character) => (
-            <article key={character.id} className="character-card">
-              <div>
-                <h3>{character.name}</h3>
-                {character.description ? <p>{character.description}</p> : null}
-              </div>
-              <div className="character-card-tools">
-                <button className="button small secondary" type="button" onClick={() => onEditCharacter(character)}>
-                  수정
+            <div className="flex justify-between gap-2 border-t border-stone-800 p-4">
+              {isEdit ? (
+                <button onClick={() => onDeleteSentence(sentence.id)} className="rounded-2xl border border-red-950/60 bg-red-950/30 px-5 py-3 text-sm font-black text-red-300 hover:bg-red-950/50" type="button">
+                  삭제
                 </button>
-                <button className="button small danger" type="button" onClick={() => onDeleteCharacter(character.id)}>
+              ) : (
+                <span />
+              )}
+              <div className="flex gap-2">
+                <button onClick={onClose} className="rounded-2xl border border-stone-800 bg-stone-900 px-5 py-3 text-sm font-black text-stone-400 hover:bg-stone-800" type="button">
+                  취소
+                </button>
+                <button onClick={saveDraft} className="rounded-2xl bg-stone-100 px-6 py-3 text-sm font-black text-stone-950 hover:bg-white" type="button">
+                  저장
+                </button>
+              </div>
+            </div>
+          </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+function createSentenceDraft(sentence) {
+  return {
+    id: sentence?.id || "",
+    title: sentence?.title || "",
+    chapter: sentence?.chapter || "",
+    original: sentence?.original || "",
+    meaning: sentence?.meaning || "",
+    mySentence: sentence?.mySentence || "",
+    x: sentence?.x,
+    y: sentence?.y,
+    practiced: sentence?.practiced || false,
+  };
+}
+
+function CharacterModal({ character, onClose, onDeleteCharacter, onSaveCharacter }) {
+  const [draft, setDraft] = useState(createCharacterDraft(character));
+
+  if (!character) return null;
+
+  function updateDraft(field, value) {
+    setDraft((previousDraft) => ({ ...previousDraft, [field]: value }));
+  }
+
+  function saveDraft() {
+    const name = draft.name.trim();
+    if (!name) return;
+
+    onSaveCharacter({
+      ...draft,
+      name,
+      description: draft.description.trim(),
+    });
+  }
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed bottom-0 left-0 right-[400px] top-0 z-40 bg-black/70 p-6 backdrop-blur-sm"
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.96, y: 20 }}
+          className="flex h-full w-full flex-col overflow-hidden rounded-[2rem] border border-slate-700 bg-slate-950 text-stone-100 shadow-2xl"
+        >
+          <div className="flex items-start justify-between gap-4 border-b border-slate-800 p-5">
+            <div className="flex items-center gap-5">
+              <div className="grid h-24 w-24 place-items-center overflow-hidden rounded-3xl border border-slate-700 bg-slate-800 text-slate-400">
+                <UserRound className="h-12 w-12" />
+              </div>
+              <div>
+                <p className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-sky-200/70">
+                  <UserRound className="h-4 w-4" />Character
+                </p>
+                <h2 className="text-3xl font-black tracking-tight">{character.name}</h2>
+                <p className="mt-1 text-sm text-slate-500">{character.description || "등장인물"}</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="rounded-2xl border border-slate-800 bg-slate-900 p-3 hover:bg-slate-800" type="button">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="grid min-h-0 flex-1 grid-cols-[1fr_320px] overflow-hidden">
+            <div className="grid content-start gap-4 overflow-y-auto p-6">
+              <label className="grid gap-1.5 rounded-3xl border border-slate-800 bg-slate-900 p-5">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-500">이름</span>
+                <input className="rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm font-bold outline-none focus:border-slate-500" value={draft.name} onChange={(event) => updateDraft("name", event.target.value)} />
+              </label>
+              <label className="grid gap-1.5 rounded-3xl border border-slate-800 bg-slate-900 p-5">
+                <span className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-500">
+                  <BookOpen className="h-4 w-4" />Character Note
+                </span>
+                <textarea className="h-48 resize-none rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-lg leading-8 outline-none focus:border-slate-500" value={draft.description} onChange={(event) => updateDraft("description", event.target.value)} />
+              </label>
+            </div>
+
+            <aside className="overflow-y-auto border-l border-slate-800 bg-slate-950 p-4">
+              <div className="mb-4 grid aspect-square place-items-center rounded-3xl border border-slate-800 bg-slate-900 text-slate-500">
+                <UserRound className="h-16 w-16" />
+              </div>
+              <div className="mb-3 text-xs font-black uppercase tracking-wider text-slate-500">Actions</div>
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={saveDraft} className="rounded-2xl border border-slate-800 bg-slate-900 px-3 py-3 text-sm font-bold text-slate-300 hover:bg-slate-800" type="button">
+                  저장
+                </button>
+                <button onClick={() => onDeleteCharacter(character.id)} className="rounded-2xl border border-red-950/60 bg-red-950/30 px-3 py-3 text-sm font-bold text-red-300 hover:bg-red-950/50" type="button">
                   삭제
                 </button>
               </div>
-            </article>
-          ))
-        )}
-      </div>
-    </section>
-  );
-}
-
-function SentenceForm({ form, editingSentenceId, onCancelEdit, onSaveSentence, onUpdateForm }) {
-  return (
-    <section className="panel">
-      <div className="panel-heading">
-        <div>
-          <h2>{editingSentenceId ? "문장 수정" : "문장 추가"}</h2>
-          <p>원문만 저장해도 충분합니다. 나머지는 나중에 채워도 됩니다.</p>
-        </div>
-      </div>
-
-      <form className="sentence-form" onSubmit={onSaveSentence}>
-        <label className="field full-width">
-          <span>게임 원문 영어 문장</span>
-          <input
-            value={form.original}
-            onChange={(event) => onUpdateForm("original", event.target.value)}
-            placeholder="I remember."
-            required
-          />
-        </label>
-
-        <label className="field full-width">
-          <span>한국어 뜻</span>
-          <textarea
-            value={form.meaning}
-            onChange={(event) => onUpdateForm("meaning", event.target.value)}
-            placeholder="나는 기억한다."
-            rows="3"
-          />
-        </label>
-
-        <label className="field full-width">
-          <span>내 문장</span>
-          <textarea
-            value={form.mySentence}
-            onChange={(event) => onUpdateForm("mySentence", event.target.value)}
-            placeholder="나중에 내 상황에 맞게 바꿔 적기"
-            rows="3"
-          />
-        </label>
-
-        <div className="button-row">
-          {editingSentenceId ? (
-            <button className="button secondary" type="button" onClick={onCancelEdit}>
-              취소
-            </button>
-          ) : null}
-          <button className="button primary" type="submit">
-            {editingSentenceId ? "수정 저장" : "문장 추가"}
-          </button>
-        </div>
-      </form>
-    </section>
-  );
-}
-
-function SentenceList({
-  sentences,
-  uiTemplate,
-  onDeleteSentence,
-  onEditSentence,
-  onSpeakEnglish,
-  onTogglePracticed,
-}) {
-  const [selectedSentenceId, setSelectedSentenceId] = useState(null);
-  const selectedSentence = sentences.find((sentence) => sentence.id === selectedSentenceId) || null;
-
-  function closeSentenceModal() {
-    setSelectedSentenceId(null);
-  }
-
-  function editSentenceFromModal(sentence) {
-    closeSentenceModal();
-    onEditSentence(sentence);
-  }
-
-  function deleteSentenceFromModal(sentenceId) {
-    closeSentenceModal();
-    onDeleteSentence(sentenceId);
-  }
-
-  if (uiTemplate === CARD_POPUP_UI_TEMPLATE) {
-    return (
-      <section className="panel">
-        <div className="panel-heading">
-          <div>
-            <h2>영어 문장 카드</h2>
-            <p>카드를 누르면 저장한 문장을 크게 봅니다.</p>
+            </aside>
           </div>
-        </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
 
-        {sentences.length === 0 ? (
-          <p className="empty-message">아직 저장한 문장이 없습니다.</p>
-        ) : (
-          <div className="sentence-card-stack">
-            {sentences.map((sentence) => (
-              <SentencePreviewCard
-                key={sentence.id}
-                sentence={sentence}
-                onOpenSentence={() => setSelectedSentenceId(sentence.id)}
-              />
-            ))}
-          </div>
-        )}
+function createCharacterDraft(character) {
+  return {
+    id: character?.id || "",
+    name: character?.name || "",
+    description: character?.description || "",
+  };
+}
 
-        <SentenceDetailModal
-          sentence={selectedSentence}
-          onClose={closeSentenceModal}
-          onDeleteSentence={deleteSentenceFromModal}
-          onEditSentence={editSentenceFromModal}
-          onSpeakEnglish={onSpeakEnglish}
-          onTogglePracticed={onTogglePracticed}
-        />
-      </section>
-    );
+function WordFormModal({ mode, word, onClose, onDeleteWord, onSaveWord }) {
+  const [draft, setDraft] = useState(createWordDraft(word));
+  const isEdit = mode === "edit";
+
+  function updateDraft(field, value) {
+    setDraft((previousDraft) => ({ ...previousDraft, [field]: value }));
+  }
+
+  function saveDraft() {
+    const wordText = draft.word.trim();
+    if (!wordText) return;
+
+    onSaveWord({
+      ...draft,
+      word: wordText,
+      meaning: draft.meaning.trim(),
+    });
   }
 
   return (
-    <section className="panel">
-      <div className="panel-heading">
-        <div>
-          <h2>영어 문장 노트</h2>
-        </div>
-      </div>
-
-      <div className="sentence-list">
-        {sentences.length === 0 ? (
-          <p className="empty-message">아직 저장한 문장이 없습니다.</p>
-        ) : (
-          sentences.map((sentence) => (
-            <SentenceCard
-              key={sentence.id}
-              sentence={sentence}
-              onDeleteSentence={onDeleteSentence}
-              onEditSentence={onEditSentence}
-              onSpeakEnglish={onSpeakEnglish}
-              onTogglePracticed={onTogglePracticed}
-            />
-          ))
-        )}
-      </div>
-    </section>
-  );
-}
-
-function SentencePreviewCard({ sentence, onOpenSentence }) {
-  const meaning = sentence.meaning.trim();
-  const previewMeaning = meaning.length > 64 ? `${meaning.slice(0, 64)}...` : meaning;
-
-  return (
-    <button
-      className={`sentence-preview-card ${sentence.practiced ? "done" : ""}`}
-      type="button"
-      onClick={onOpenSentence}
-    >
-      <span className="sentence-preview-copy">
-        <strong>{sentence.original}</strong>
-        {previewMeaning ? (
-          <span className="sentence-preview-meaning">{previewMeaning}</span>
-        ) : (
-          <span className="sentence-preview-meaning empty-preview">뜻을 아직 적지 않았습니다.</span>
-        )}
-      </span>
-      <span className="sentence-preview-status">{sentence.practiced ? "완료" : "대기"}</span>
-    </button>
-  );
-}
-
-function SentenceDetailModal({
-  sentence,
-  onClose,
-  onDeleteSentence,
-  onEditSentence,
-  onSpeakEnglish,
-  onTogglePracticed,
-}) {
-  useEffect(() => {
-    if (!sentence) return undefined;
-
-    function closeWithEscape(event) {
-      if (event.key === "Escape") onClose();
-    }
-
-    window.addEventListener("keydown", closeWithEscape);
-    return () => window.removeEventListener("keydown", closeWithEscape);
-  }, [sentence, onClose]);
-
-  if (!sentence) return null;
-
-  const mySentence = sentence.mySentence.trim();
-
-  return (
-    <div className="modal-backdrop" role="presentation" onClick={onClose}>
-      <section
-        className="modal-card sentence-detail-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="sentence-detail-title"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="modal-header">
-          <div>
-            <p className="eyebrow">저장 문장</p>
-            <h2 id="sentence-detail-title">{sentence.original}</h2>
-          </div>
-          <button className="button small secondary" type="button" onClick={onClose}>
-            닫기
-          </button>
-        </div>
-
-        <div className="sentence-detail-content">
-          {sentence.meaning ? (
-            <section className="modal-section">
-              <h3>뜻</h3>
-              <p>{sentence.meaning}</p>
-            </section>
-          ) : null}
-
-          {mySentence ? (
-            <section className="modal-section">
-              <h3>내 문장</h3>
-              <p>{mySentence}</p>
-            </section>
-          ) : null}
-
-          <label className="practice-check sentence-detail-practice">
-            <input
-              className="toggle-input"
-              type="checkbox"
-              checked={sentence.practiced}
-              onChange={() => onTogglePracticed(sentence.id)}
-            />
-            <span className="toggle-track" aria-hidden="true" />
-            <span className="toggle-copy">연습 완료</span>
-          </label>
-        </div>
-
-        <div className="sentence-detail-actions">
-          <button className="button secondary" type="button" onClick={() => onSpeakEnglish(sentence.original)}>
-            원문 듣기
-          </button>
-          {mySentence ? (
-            <button className="button secondary" type="button" onClick={() => onSpeakEnglish(mySentence)}>
-              내 문장 듣기
-            </button>
-          ) : null}
-          <button className="button secondary" type="button" onClick={() => onEditSentence(sentence)}>
-            수정
-          </button>
-          <button className="button danger" type="button" onClick={() => onDeleteSentence(sentence.id)}>
-            삭제
-          </button>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function SentenceCard({
-  sentence,
-  onDeleteSentence,
-  onEditSentence,
-  onSpeakEnglish,
-  onTogglePracticed,
-}) {
-  const mySentence = sentence.mySentence.trim();
-
-  return (
-    <article className={`sentence-card ${sentence.practiced ? "done" : ""}`}>
-      <div className="sentence-top">
-        <div className="sentence-copy">
-          <button
-            className="sentence-icon-action"
-            type="button"
-            onClick={() => onSpeakEnglish(sentence.original)}
-            aria-label="원문 듣기"
-            title="원문 듣기"
+    <AnimatePresence>
+      <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 grid place-items-center bg-black/65 p-6 backdrop-blur-sm"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 16 }}
+            className="w-full max-w-md rounded-[2rem] border border-emerald-900/40 bg-emerald-50 p-5 text-stone-900 shadow-2xl"
           >
-            <SpeakerIcon />
-          </button>
-          <div className="sentence-text">
-            <h3>{sentence.original}</h3>
-            {sentence.meaning ? <p className="meaning">{sentence.meaning}</p> : null}
-          </div>
-        </div>
-
-        <div className="sentence-card-tools">
-          <label className="practice-check">
-            <input
-              className="toggle-input"
-              type="checkbox"
-              checked={sentence.practiced}
-              onChange={() => onTogglePracticed(sentence.id)}
-            />
-            <span className="toggle-track" aria-hidden="true" />
-            <span className="toggle-copy">연습 완료</span>
-          </label>
-          <button
-            className="sentence-icon-action"
-            type="button"
-            onClick={() => onEditSentence(sentence)}
-            aria-label="문장 수정"
-            title="수정"
-          >
-            <EditIcon />
-          </button>
-          <button
-            className="sentence-icon-action danger"
-            type="button"
-            onClick={() => onDeleteSentence(sentence.id)}
-            aria-label="문장 삭제"
-            title="삭제"
-          >
-            <TrashIcon />
-          </button>
-        </div>
-      </div>
-
-      {mySentence ? (
-        <div className="sentence-body">
-          <div className="sentence-copy">
-            <button
-              className="sentence-icon-action"
-              type="button"
-              onClick={() => onSpeakEnglish(mySentence)}
-              aria-label="내 문장 듣기"
-              title="내 문장 듣기"
-            >
-              <SpeakerIcon />
-            </button>
-            <div className="sentence-text">
-              <p className="card-label">내 문장</p>
-              <p>{mySentence}</p>
-            </div>
-          </div>
-        </div>
-      ) : null}
-    </article>
-  );
-}
-
-function SpeakerIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 9v6h4l5 4V5L8 9H4Z" fill="currentColor" />
-      <path
-        d="M16 9.2c.8.8 1.2 1.7 1.2 2.8s-.4 2-1.2 2.8M18.6 6.8A7.2 7.2 0 0 1 21 12a7.2 7.2 0 0 1-2.4 5.2"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="2"
-      />
-    </svg>
-  );
-}
-
-function EditIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="m5 16.8-.7 3 3-.7L18.8 8.6 16.5 6.3 5 16.8ZM15.2 5l2.3-2.1 2.3 2.3-2.2 2.1L15.2 5Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
-function TrashIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M8 4h8l1 2h4v2H3V6h4l1-2Zm1 6h2v8H9v-8Zm4 0h2v8h-2v-8Zm-6 0h10l-.7 10H7.7L7 10Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
-function StatsModal({ stats, isOpen, onClose }) {
-  useEffect(() => {
-    if (!isOpen) return undefined;
-
-    function closeWithEscape(event) {
-      if (event.key === "Escape") onClose();
-    }
-
-    window.addEventListener("keydown", closeWithEscape);
-    return () => window.removeEventListener("keydown", closeWithEscape);
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="modal-backdrop" role="presentation" onClick={onClose}>
-      <section
-        className="modal-card stats-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="stats-title"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="modal-header">
-          <div>
-            <p className="eyebrow">공부 현황</p>
-            <h2 id="stats-title">통계</h2>
-          </div>
-          <button className="button small secondary" type="button" onClick={onClose}>
-            닫기
-          </button>
-        </div>
-
-        <div className="stats-list">
-          {stats.map((stat) => (
-            <article key={stat.label} className="stat-row">
+            <div className="mb-5 flex items-start justify-between gap-4">
               <div>
-                <h3>{stat.label}</h3>
-                <p>{stat.description}</p>
+                <p className="mb-1 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-emerald-800/60">
+                  <Languages className="h-4 w-4" />Vocabulary
+                </p>
+                <h2 className="text-2xl font-black">{isEdit ? "영단어 수정" : "영단어 추가"}</h2>
               </div>
-              <strong>{stat.value}</strong>
-            </article>
-          ))}
-        </div>
-      </section>
-    </div>
+              <button onClick={onClose} className="rounded-2xl bg-black/10 p-3 hover:bg-black/15" type="button">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <label className="block">
+                <span className="mb-1 block text-xs font-black text-stone-500">영단어</span>
+                <input
+                  value={draft.word}
+                  onChange={(event) => updateDraft("word", event.target.value)}
+                  className="w-full rounded-2xl border border-emerald-900/20 bg-white/70 px-4 py-3 text-sm font-bold outline-none focus:border-emerald-700"
+                  placeholder="example: discover"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs font-black text-stone-500">한글 뜻</span>
+                <input
+                  value={draft.meaning}
+                  onChange={(event) => updateDraft("meaning", event.target.value)}
+                  className="w-full rounded-2xl border border-emerald-900/20 bg-white/70 px-4 py-3 text-sm font-bold outline-none focus:border-emerald-700"
+                  placeholder="example: 발견하다"
+                />
+              </label>
+            </div>
+
+            <div className="mt-5 flex items-center justify-between gap-2">
+              {isEdit ? (
+                <button onClick={() => onDeleteWord(word.id)} className="rounded-2xl border border-red-900/20 bg-red-100 px-4 py-3 text-sm font-black text-red-700 hover:bg-red-200" type="button">
+                  삭제
+                </button>
+              ) : (
+                <span />
+              )}
+              <div className="flex gap-2">
+                <button onClick={onClose} className="rounded-2xl px-4 py-3 text-sm font-black text-stone-500 hover:bg-black/10" type="button">취소</button>
+                <button onClick={saveDraft} className="rounded-2xl bg-stone-950 px-5 py-3 text-sm font-black text-white hover:bg-stone-800" type="button">
+                  {isEdit ? "저장" : "추가"}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
-function GuideModal({ guide, isOpen, onClose }) {
-  useEffect(() => {
-    if (!isOpen) return undefined;
+function createWordDraft(word) {
+  return {
+    id: word?.id || "",
+    word: word?.word || "",
+    meaning: word?.meaning || "",
+  };
+}
 
-    function closeWithEscape(event) {
-      if (event.key === "Escape") onClose();
-    }
+function AddCharacterModal({ onClose, onSaveCharacter }) {
+  const [draft, setDraft] = useState(createCharacterDraft(null));
 
-    window.addEventListener("keydown", closeWithEscape);
-    return () => window.removeEventListener("keydown", closeWithEscape);
-  }, [isOpen, onClose]);
+  function updateDraft(field, value) {
+    setDraft((previousDraft) => ({ ...previousDraft, [field]: value }));
+  }
 
-  if (!isOpen) return null;
+  function saveDraft() {
+    const name = draft.name.trim();
+    if (!name) return;
+
+    onSaveCharacter({
+      name,
+      description: draft.description.trim(),
+    });
+  }
 
   return (
-    <div className="modal-backdrop" role="presentation" onClick={onClose}>
-      <section
-        className="modal-card"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="guide-title"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="modal-header">
-          <div>
-            <p className="eyebrow">사용 방법</p>
-            <h2 id="guide-title">{guide.title}</h2>
-          </div>
-          <button className="button small secondary" type="button" onClick={onClose}>
-            닫기
-          </button>
-        </div>
+    <AnimatePresence>
+      <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed bottom-0 left-0 right-[400px] top-0 z-40 grid place-items-center bg-black/65 p-6 backdrop-blur-sm"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 16 }}
+            className="w-full max-w-3xl overflow-hidden rounded-[2rem] border border-slate-700 bg-slate-950 text-stone-100 shadow-2xl"
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-slate-800 p-5">
+              <div>
+                <p className="mb-1 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-sky-200/70">
+                  <UserRound className="h-4 w-4" />Character
+                </p>
+                <h2 className="text-2xl font-black">등장인물 추가</h2>
+              </div>
+              <button onClick={onClose} className="rounded-2xl border border-slate-800 bg-slate-900 p-3 hover:bg-slate-800" type="button">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
 
-        <p className="modal-description">{guide.description}</p>
+            <div className="grid grid-cols-[180px_1fr] gap-5 p-5">
+              <div>
+                <div className="grid h-36 w-36 place-items-center rounded-3xl border border-dashed border-slate-700 bg-slate-900 text-slate-500">
+                  <UserRound className="h-14 w-14" />
+                </div>
+              </div>
 
-        <div className="modal-section">
-          <h3>진행 방식</h3>
-          <ol className="guide-step-list">
-            {guide.steps.map((step) => (
-              <li key={step.title} className="guide-step">
-                <h4>{step.title}</h4>
-                <ul>
-                  {step.bullets.map((bullet) => (
-                    <li key={bullet}>{bullet}</li>
-                  ))}
-                </ul>
-                {step.example ? (
-                  <div className="guide-example">
-                    <p>
-                      <span>게임 문장</span>
-                      {step.example.original}
-                    </p>
-                    <p>
-                      <span>내 문장</span>
-                      {step.example.mine}
-                    </p>
-                  </div>
-                ) : null}
-              </li>
-            ))}
-          </ol>
-        </div>
+              <div className="space-y-3">
+                <label className="block">
+                  <span className="mb-1 block text-xs font-black text-slate-500">이름</span>
+                  <input className="w-full rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm font-bold outline-none focus:border-slate-500" value={draft.name} onChange={(event) => updateDraft("name", event.target.value)} placeholder="Ethan Carter" />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-xs font-black text-slate-500">인물 메모</span>
+                  <textarea className="h-28 w-full resize-none rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm outline-none focus:border-slate-500" value={draft.description} onChange={(event) => updateDraft("description", event.target.value)} placeholder="스토리에서 어떤 인물인지 적습니다." />
+                </label>
+              </div>
+            </div>
 
-        <div className="modal-section">
-          <h3>기억할 점</h3>
-          <div className="tip-list">
-            {guide.tips.map((tip) => (
-              <p key={tip}>{tip}</p>
-            ))}
-          </div>
-        </div>
-      </section>
-    </div>
+            <div className="flex justify-end gap-2 border-t border-slate-800 p-5">
+              <button onClick={onClose} className="rounded-2xl px-4 py-3 text-sm font-black text-slate-500 hover:bg-slate-900" type="button">취소</button>
+              <button onClick={saveDraft} className="rounded-2xl bg-stone-100 px-5 py-3 text-sm font-black text-stone-950 hover:bg-white" type="button">추가</button>
+            </div>
+          </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 }

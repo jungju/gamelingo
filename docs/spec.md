@@ -23,9 +23,9 @@ while playing games and turning them into short personal practice notes.
 The current product includes `What Remains of Edith Finch` as the built-in game
 and lets each user add personal games that share the same study note workflow:
 missions, vocabulary, story notes, sentence cards, local guest storage, and
-game-specific note UI templates, character lists, optional ohmesh-backed
-account storage. The default note UI keeps missions visible; the card popup UI
-hides missions and shows compact vertical sentence cards.
+character lists, optional ohmesh-backed account storage. The study screen uses
+the board UI from `prototype/template1.jsx`: draggable sentence notes, a word
+board, a story note area, and a bottom character rail.
 
 ## Data Contract
 
@@ -35,7 +35,7 @@ hides missions and shows compact vertical sentence cards.
 - Current record type: `gamelingo-study-state`
 - Current guest key: `gamelingo:v3:app:guest`
 - Record data stores custom game metadata plus game-keyed mission checks,
-  vocabulary, story notes, sentence notes, selected note UI template, and
+  vocabulary, word-board notes, story notes, draggable sentence notes, and
   character lists in the compact v3 shape documented in `README.md`.
 - Legacy fallback reads `edith-finch-study-state` and
   `gamelingo:v2:edithFinch:guest` as Edith Finch-only notes, then writes future
@@ -46,5 +46,5 @@ hides missions and shows compact vertical sentence cards.
 - User-facing flow or data shape changes update this file and `README.md`.
 - Built-in games should document their path, default data, and any game-specific
   guide behavior. User-added games use `/games/{id}` and the shared empty note
-  defaults, including the default note UI template and empty character lists.
+  defaults, including empty board notes and character lists.
 - Behavior changes should keep `AGENTS.md` validation rules intact.
