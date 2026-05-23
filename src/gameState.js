@@ -230,7 +230,7 @@ function normalizeCompactMissionChecks(missionMask) {
   );
 }
 
-function normalizeCompactSentence(sentence, index = 0) {
+function normalizeCompactSentence(sentence) {
   if (Array.isArray(sentence)) {
     return normalizeSentence(
       {
@@ -238,8 +238,7 @@ function normalizeCompactSentence(sentence, index = 0) {
         meaning: sentence[1] || "",
         mySentence: sentence[2] || "",
         practiced: Boolean(sentence[3]),
-      },
-      index
+      }
     );
   }
 
@@ -252,10 +251,7 @@ function normalizeCompactSentence(sentence, index = 0) {
       meaning: sentence?.k || sentence?.meaning,
       mySentence: sentence?.r || sentence?.mySentence,
       practiced: sentence?.p || sentence?.practiced,
-      x: sentence?.x,
-      y: sentence?.y,
-    },
-    index
+    }
   );
 }
 
@@ -364,8 +360,6 @@ function serializeSentence(sentence) {
   if (sentence.meaning) compactSentence.k = sentence.meaning;
   if (sentence.mySentence) compactSentence.r = sentence.mySentence;
   if (sentence.practiced) compactSentence.p = 1;
-  if (Number.isFinite(sentence.x)) compactSentence.x = sentence.x;
-  if (Number.isFinite(sentence.y)) compactSentence.y = sentence.y;
 
   return compactSentence;
 }
@@ -394,9 +388,7 @@ function areSentencesEquivalent(sentences, referenceSentences) {
       sentence?.original === referenceSentence.original &&
       sentence?.meaning === referenceSentence.meaning &&
       sentence?.mySentence === referenceSentence.mySentence &&
-      Boolean(sentence?.practiced) === Boolean(referenceSentence.practiced) &&
-      sentence?.x === referenceSentence.x &&
-      sentence?.y === referenceSentence.y
+      Boolean(sentence?.practiced) === Boolean(referenceSentence.practiced)
     );
   });
 }
@@ -501,15 +493,13 @@ function normalizeMissionChecks(missionChecks) {
   );
 }
 
-export function normalizeSentence(sentence, index = 0) {
+export function normalizeSentence(sentence) {
   if (!sentence || typeof sentence !== "object" || typeof sentence.original !== "string") {
     return null;
   }
 
   const original = sentence.original.trim();
   if (!original) return null;
-
-  const defaultPosition = getDefaultBoardPosition(index);
 
   return {
     id: sentence.id || createId("sentence"),
@@ -519,8 +509,6 @@ export function normalizeSentence(sentence, index = 0) {
     meaning: typeof sentence.meaning === "string" ? sentence.meaning : "",
     mySentence: typeof sentence.mySentence === "string" ? sentence.mySentence : "",
     practiced: Boolean(sentence.practiced),
-    x: clampBoardPercent(Number.isFinite(sentence.x) ? sentence.x : defaultPosition.x),
-    y: clampBoardPercent(Number.isFinite(sentence.y) ? sentence.y : defaultPosition.y),
   };
 }
 
@@ -580,23 +568,6 @@ export function getGameAccentColor(gameId) {
   return colors[colorIndex];
 }
 
-export function getDefaultBoardPosition(index) {
-  const positions = [
-    { x: 7, y: 12 },
-    { x: 38, y: 15 },
-    { x: 14, y: 53 },
-    { x: 56, y: 47 },
-    { x: 24, y: 28 },
-    { x: 49, y: 66 },
-  ];
-  return positions[index % positions.length];
-}
-
-export function clampBoardPercent(value) {
-  if (!Number.isFinite(value)) return 10;
-  return Math.max(2, Math.min(76, Math.round(value * 10) / 10));
-}
-
 export function getSentenceTitle(sentence) {
   return sentence.title || sentence.original.split(/\s+/).slice(0, 5).join(" ");
 }
@@ -607,10 +578,4 @@ export function getSentenceChapter(sentence, index) {
 
 export function getSentenceSummary(sentence) {
   return sentence.mySentence || sentence.meaning || sentence.original;
-}
-
-export function findVocabularyForSentence(sentence, vocabulary) {
-  const sourceText = `${sentence.original} ${sentence.meaning} ${sentence.mySentence}`.toLowerCase();
-  const matches = vocabulary.filter((entry) => sourceText.includes(entry.word.toLowerCase()));
-  return (matches.length ? matches : vocabulary).slice(0, 4);
 }

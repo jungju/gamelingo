@@ -255,7 +255,7 @@ img {
   border-radius: 14px;
   background: rgba(254, 243, 199, 0.96);
   color: #1c1917;
-  padding: 11px;
+  padding: 7px 10px;
   text-align: left;
   box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28);
   transition:
@@ -306,7 +306,7 @@ img {
   display: flex;
   align-items: center;
   gap: 7px;
-  margin-bottom: 7px;
+  margin-bottom: 4px;
   overflow: hidden;
   font-size: 10px;
   font-weight: 900;
@@ -330,10 +330,10 @@ img {
 
 .study-template .note-summary {
   display: -webkit-box;
-  margin: 5px 0 0;
+  margin: 4px 0 0;
   overflow: hidden;
   font-size: 12px;
-  line-height: 1.45;
+  line-height: 1.36;
   opacity: 0.76;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;

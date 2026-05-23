@@ -50,8 +50,8 @@ panel, and a bottom character rail.
 - Selecting a game opens the shared study board for that game.
 - Edith Finch starts with its cover, default vocabulary, and sample sentences.
 - Custom games start with empty sentences, vocabulary, and characters.
-- Sentence notes render as fixed-size cards in a row-major grid: left to right,
-  then the next row from the left.
+- Sentence notes render as compact fixed-size cards in a row-major grid: left to
+  right, then the next row from the left.
 - Sentence notes are not freely positioned by `x`/`y` coordinates in the current
   UI.
 - Dragging is only for reordering. Users drag the note handle to move a sentence
@@ -87,9 +87,8 @@ panel, and a bottom character rail.
 - Record data stores custom game metadata plus game-keyed mission checks,
   vocabulary, word-board notes, story notes, sentence notes, and character lists
   in the compact v3 shape documented in `README.md`.
-- Compact sentence note `x` and `y` may still be serialized for legacy
-  compatibility, but the current board layout ignores them.
-- The compact `s` sentence array order is the current board order.
+- The compact `s` sentence array order is the current board order. New saves do
+  not serialize legacy sentence `x` and `y` coordinates.
 - Legacy fallback reads `edith-finch-study-state` and
   `gamelingo:v2:edithFinch:guest` as Edith Finch-only notes, then writes future
   saves to the v3 app shape.

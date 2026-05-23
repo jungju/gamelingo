@@ -43,8 +43,6 @@ export const sampleSentences = [
     meaning: "나는 기억한다.",
     mySentence: "I remember my first day at work.",
     practiced: false,
-    x: 7,
-    y: 12,
   },
   {
     id: "sample-2",
@@ -54,8 +52,6 @@ export const sampleSentences = [
     meaning: "나는 두려웠다.",
     mySentence: "I was nervous before the meeting.",
     practiced: false,
-    x: 38,
-    y: 15,
   },
   {
     id: "sample-3",
@@ -65,8 +61,6 @@ export const sampleSentences = [
     meaning: "나는 그것을 설명할 수 없었다.",
     mySentence: "I couldn't explain my idea clearly.",
     practiced: false,
-    x: 14,
-    y: 53,
   },
 ];
 

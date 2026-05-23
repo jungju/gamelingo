@@ -17,7 +17,6 @@ import {
   createCharacterId,
   createId,
   formatVocabularyText,
-  getDefaultBoardPosition,
   getSentenceChapter,
   getSentenceSummary,
   getSentenceTitle,
@@ -27,6 +26,24 @@ import {
 } from "../gameState";
 import { getUserDisplayName } from "../ohmeshClient";
 import { SyncStatusBadge } from "./Shared";
+
+const FADE_MOTION = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
+};
+const PANEL_MOTION = {
+  initial: { opacity: 0, scale: 0.96, y: 16 },
+  animate: { opacity: 1, scale: 1, y: 0 },
+  exit: { opacity: 0, scale: 0.96, y: 16 },
+};
+const LARGE_PANEL_MOTION = {
+  ...PANEL_MOTION,
+  initial: { opacity: 0, scale: 0.96, y: 20 },
+  exit: { opacity: 0, scale: 0.96, y: 20 },
+};
+const SLATE_CLOSE_BUTTON_CLASS = "rounded-2xl border border-slate-800 bg-slate-900 p-3 hover:bg-slate-800";
+const STONE_CLOSE_BUTTON_CLASS = "rounded-2xl border border-stone-800 bg-stone-900 p-3 hover:bg-stone-800";
 
 export function StudyBoardPage({
   game,
@@ -69,12 +86,9 @@ export function StudyBoardPage({
         };
       }
 
-      const defaultPosition = getDefaultBoardPosition(previousData.sentences.length);
       const newSentence = normalizeSentence({
         ...sentenceDraft,
         id: createId("sentence"),
-        x: defaultPosition.x,
-        y: defaultPosition.y,
         practiced: false,
       });
 
@@ -483,82 +497,66 @@ function SentenceBoardModal({ sentence, onClose, onDeleteSentence, onSaveSentenc
   }
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="overlay"
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 20 }}
-          className="modal"
-        >
-          <div className="modal-header">
-            <div className="modal-title">
-              <BookOpen className="h-5 w-5 text-amber-200/70" />노트
-            </div>
-            <div className="modal-actions">
-              <button className="toggle-button" type="button" onClick={() => setShowKorean((previous) => !previous)}>
-                <span>{showKorean ? "◑" : "◐"}</span>
-                <span>{showKorean ? "한글 숨기기" : "한글 보기"}</span>
-              </button>
-              <button onClick={onClose} className="icon-button" type="button">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
+    <ModalPresence overlayClassName="overlay" panelClassName="modal" panelMotion={LARGE_PANEL_MOTION}>
+      <div className="modal-header">
+        <div className="modal-title">
+          <BookOpen className="h-5 w-5 text-amber-200/70" />노트
+        </div>
+        <div className="modal-actions">
+          <button className="toggle-button" type="button" onClick={() => setShowKorean((previous) => !previous)}>
+            <span>{showKorean ? "◑" : "◐"}</span>
+            <span>{showKorean ? "한글 숨기기" : "한글 보기"}</span>
+          </button>
+          <CloseButton onClose={onClose} />
+        </div>
+      </div>
 
-          <div className={showKorean ? "note-editor" : "note-editor only-english"}>
-            <section className="editor-section">
-              <div className="field-label">
-                <StickyNote className="h-4 w-4" />English
-              </div>
-              <textarea
-                value={draft.original}
-                onChange={(event) => updateDraft("original", event.target.value)}
-                className="editor-textarea english-textarea"
-                placeholder="게임에서 발견한 영어 문장을 적습니다."
-              />
-            </section>
-
-            {showKorean ? (
-              <section className="editor-section">
-                <div className="field-label">
-                  <Languages className="h-4 w-4" />한글 / 해석
-                </div>
-                <textarea
-                  value={draft.meaning}
-                  onChange={(event) => updateDraft("meaning", event.target.value)}
-                  className="editor-textarea korean-textarea"
-                  placeholder="번역, 해석 설명, 문맥 설명을 적습니다."
-                />
-              </section>
-            ) : null}
+      <div className={showKorean ? "note-editor" : "note-editor only-english"}>
+        <section className="editor-section">
+          <div className="field-label">
+            <StickyNote className="h-4 w-4" />English
           </div>
+          <textarea
+            value={draft.original}
+            onChange={(event) => updateDraft("original", event.target.value)}
+            className="editor-textarea english-textarea"
+            placeholder="게임에서 발견한 영어 문장을 적습니다."
+          />
+        </section>
 
-          <div className="modal-footer">
-            {isEdit ? (
-              <button onClick={() => onDeleteSentence(sentence.id)} className="danger-button" type="button">
-                삭제
-              </button>
-            ) : (
-              <span />
-            )}
-            <div className="footer-right">
-              <button onClick={onClose} className="secondary-button" type="button">
-                취소
-              </button>
-              <button onClick={saveDraft} className="save-button" type="button">
-                저장
-              </button>
+        {showKorean ? (
+          <section className="editor-section">
+            <div className="field-label">
+              <Languages className="h-4 w-4" />한글 / 해석
             </div>
-          </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+            <textarea
+              value={draft.meaning}
+              onChange={(event) => updateDraft("meaning", event.target.value)}
+              className="editor-textarea korean-textarea"
+              placeholder="번역, 해석 설명, 문맥 설명을 적습니다."
+            />
+          </section>
+        ) : null}
+      </div>
+
+      <div className="modal-footer">
+        {isEdit ? (
+          <button onClick={() => onDeleteSentence(sentence.id)} className="danger-button" type="button">
+            삭제
+          </button>
+        ) : (
+          <span />
+        )}
+        <div className="footer-right">
+          <button onClick={onClose} className="secondary-button" type="button">
+            취소
+          </button>
+          <button onClick={saveDraft} className="save-button" type="button">
+            저장
+          </button>
+        </div>
+      </div>
+    </ModalPresence>
   );
 }
 
@@ -570,10 +568,28 @@ function createSentenceDraft(sentence) {
     original: sentence?.original || "",
     meaning: sentence?.meaning || "",
     mySentence: sentence?.mySentence || "",
-    x: sentence?.x,
-    y: sentence?.y,
     practiced: sentence?.practiced || false,
   };
+}
+
+function ModalPresence({ children, overlayClassName, panelClassName, panelMotion = PANEL_MOTION }) {
+  return (
+    <AnimatePresence>
+      <motion.div {...FADE_MOTION} className={overlayClassName}>
+        <motion.div {...panelMotion} className={panelClassName}>
+          {children}
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+function CloseButton({ className = "icon-button", onClose }) {
+  return (
+    <button onClick={onClose} className={className} type="button">
+      <X className="h-5 w-5" />
+    </button>
+  );
 }
 
 function CharacterModal({ character, onClose, onDeleteCharacter, onSaveCharacter }) {
@@ -597,69 +613,57 @@ function CharacterModal({ character, onClose, onDeleteCharacter, onSaveCharacter
   }
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="character-modal-shell fixed bottom-0 left-0 top-0 z-40 bg-black/70 p-6 backdrop-blur-sm"
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 20 }}
-          className="flex h-full w-full flex-col overflow-hidden rounded-[2rem] border border-slate-700 bg-slate-950 text-stone-100 shadow-2xl"
-        >
-          <div className="flex items-start justify-between gap-4 border-b border-slate-800 p-5">
-            <div className="flex items-center gap-5">
-              <div className="grid h-24 w-24 place-items-center overflow-hidden rounded-3xl border border-slate-700 bg-slate-800 text-slate-400">
-                <UserRound className="h-12 w-12" />
-              </div>
-              <div>
-                <p className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-sky-200/70">
-                  <UserRound className="h-4 w-4" />Character
-                </p>
-                <h2 className="text-3xl font-black tracking-tight">{character.name}</h2>
-                <p className="mt-1 text-sm text-slate-500">{character.description || "등장인물"}</p>
-              </div>
-            </div>
-            <button onClick={onClose} className="rounded-2xl border border-slate-800 bg-slate-900 p-3 hover:bg-slate-800" type="button">
-              <X className="h-5 w-5" />
+    <ModalPresence
+      overlayClassName="character-modal-shell fixed bottom-0 left-0 top-0 z-40 bg-black/70 p-6 backdrop-blur-sm"
+      panelClassName="flex h-full w-full flex-col overflow-hidden rounded-[2rem] border border-slate-700 bg-slate-950 text-stone-100 shadow-2xl"
+      panelMotion={LARGE_PANEL_MOTION}
+    >
+      <div className="flex items-start justify-between gap-4 border-b border-slate-800 p-5">
+        <div className="flex items-center gap-5">
+          <div className="grid h-24 w-24 place-items-center overflow-hidden rounded-3xl border border-slate-700 bg-slate-800 text-slate-400">
+            <UserRound className="h-12 w-12" />
+          </div>
+          <div>
+            <p className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-sky-200/70">
+              <UserRound className="h-4 w-4" />Character
+            </p>
+            <h2 className="text-3xl font-black tracking-tight">{character.name}</h2>
+            <p className="mt-1 text-sm text-slate-500">{character.description || "등장인물"}</p>
+          </div>
+        </div>
+        <CloseButton className={SLATE_CLOSE_BUTTON_CLASS} onClose={onClose} />
+      </div>
+
+      <div className="grid min-h-0 flex-1 grid-cols-[1fr_320px] overflow-hidden">
+        <div className="grid content-start gap-4 overflow-y-auto p-6">
+          <label className="grid gap-1.5 rounded-3xl border border-slate-800 bg-slate-900 p-5">
+            <span className="text-xs font-black uppercase tracking-wider text-slate-500">이름</span>
+            <input className="rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm font-bold outline-none focus:border-slate-500" value={draft.name} onChange={(event) => updateDraft("name", event.target.value)} />
+          </label>
+          <label className="grid gap-1.5 rounded-3xl border border-slate-800 bg-slate-900 p-5">
+            <span className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-500">
+              <BookOpen className="h-4 w-4" />Character Note
+            </span>
+            <textarea className="h-48 resize-none rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-lg leading-8 outline-none focus:border-slate-500" value={draft.description} onChange={(event) => updateDraft("description", event.target.value)} />
+          </label>
+        </div>
+
+        <aside className="overflow-y-auto border-l border-slate-800 bg-slate-950 p-4">
+          <div className="mb-4 grid aspect-square place-items-center rounded-3xl border border-slate-800 bg-slate-900 text-slate-500">
+            <UserRound className="h-16 w-16" />
+          </div>
+          <div className="mb-3 text-xs font-black uppercase tracking-wider text-slate-500">Actions</div>
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={saveDraft} className="rounded-2xl border border-slate-800 bg-slate-900 px-3 py-3 text-sm font-bold text-slate-300 hover:bg-slate-800" type="button">
+              저장
+            </button>
+            <button onClick={() => onDeleteCharacter(character.id)} className="rounded-2xl border border-red-950/60 bg-red-950/30 px-3 py-3 text-sm font-bold text-red-300 hover:bg-red-950/50" type="button">
+              삭제
             </button>
           </div>
-
-          <div className="grid min-h-0 flex-1 grid-cols-[1fr_320px] overflow-hidden">
-            <div className="grid content-start gap-4 overflow-y-auto p-6">
-              <label className="grid gap-1.5 rounded-3xl border border-slate-800 bg-slate-900 p-5">
-                <span className="text-xs font-black uppercase tracking-wider text-slate-500">이름</span>
-                <input className="rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm font-bold outline-none focus:border-slate-500" value={draft.name} onChange={(event) => updateDraft("name", event.target.value)} />
-              </label>
-              <label className="grid gap-1.5 rounded-3xl border border-slate-800 bg-slate-900 p-5">
-                <span className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-500">
-                  <BookOpen className="h-4 w-4" />Character Note
-                </span>
-                <textarea className="h-48 resize-none rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-lg leading-8 outline-none focus:border-slate-500" value={draft.description} onChange={(event) => updateDraft("description", event.target.value)} />
-              </label>
-            </div>
-
-            <aside className="overflow-y-auto border-l border-slate-800 bg-slate-950 p-4">
-              <div className="mb-4 grid aspect-square place-items-center rounded-3xl border border-slate-800 bg-slate-900 text-slate-500">
-                <UserRound className="h-16 w-16" />
-              </div>
-              <div className="mb-3 text-xs font-black uppercase tracking-wider text-slate-500">Actions</div>
-              <div className="grid grid-cols-2 gap-2">
-                <button onClick={saveDraft} className="rounded-2xl border border-slate-800 bg-slate-900 px-3 py-3 text-sm font-bold text-slate-300 hover:bg-slate-800" type="button">
-                  저장
-                </button>
-                <button onClick={() => onDeleteCharacter(character.id)} className="rounded-2xl border border-red-950/60 bg-red-950/30 px-3 py-3 text-sm font-bold text-red-300 hover:bg-red-950/50" type="button">
-                  삭제
-                </button>
-              </div>
-            </aside>
-          </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+        </aside>
+      </div>
+    </ModalPresence>
   );
 }
 
@@ -679,50 +683,37 @@ function VocabularyEditorModal({ vocabulary, onClose, onSaveVocabulary }) {
   }
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 grid place-items-center bg-black/65 p-6 backdrop-blur-sm"
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 16 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 16 }}
-          className="w-full max-w-2xl rounded-[2rem] border border-stone-700 bg-stone-950 p-5 text-stone-100 shadow-2xl"
-        >
-          <div className="mb-5 flex items-start justify-between gap-4">
-            <div>
-              <p className="mb-1 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-stone-500">
-                <Languages className="h-4 w-4" />Vocabulary
-              </p>
-              <h2 className="text-2xl font-black">영단어 수정</h2>
-            </div>
-            <button onClick={onClose} className="rounded-2xl border border-stone-800 bg-stone-900 p-3 hover:bg-stone-800" type="button">
-              <X className="h-5 w-5" />
-            </button>
-          </div>
+    <ModalPresence
+      overlayClassName="fixed inset-0 z-50 grid place-items-center bg-black/65 p-6 backdrop-blur-sm"
+      panelClassName="w-full max-w-2xl rounded-[2rem] border border-stone-700 bg-stone-950 p-5 text-stone-100 shadow-2xl"
+    >
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div>
+          <p className="mb-1 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-stone-500">
+            <Languages className="h-4 w-4" />Vocabulary
+          </p>
+          <h2 className="text-2xl font-black">영단어 수정</h2>
+        </div>
+        <CloseButton className={STONE_CLOSE_BUTTON_CLASS} onClose={onClose} />
+      </div>
 
-          <label className="block">
-            <span className="mb-1 block text-xs font-black text-stone-500">영단어 목록</span>
-            <textarea
-              value={text}
-              onChange={(event) => setText(event.target.value)}
-              className="h-80 w-full resize-none rounded-2xl border border-stone-800 bg-stone-900 px-4 py-3 font-mono text-sm leading-6 text-stone-100 outline-none placeholder:text-stone-600 focus:border-stone-500"
-              placeholder={"alive: 살아 있는\nattic: 다락방\nmemory: 기억"}
-            />
-          </label>
+      <label className="block">
+        <span className="mb-1 block text-xs font-black text-stone-500">영단어 목록</span>
+        <textarea
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+          className="h-80 w-full resize-none rounded-2xl border border-stone-800 bg-stone-900 px-4 py-3 font-mono text-sm leading-6 text-stone-100 outline-none placeholder:text-stone-600 focus:border-stone-500"
+          placeholder={"alive: 살아 있는\nattic: 다락방\nmemory: 기억"}
+        />
+      </label>
 
-          <div className="mt-5 flex justify-end gap-2">
-            <button onClick={onClose} className="rounded-2xl px-4 py-3 text-sm font-black text-stone-500 hover:bg-stone-900" type="button">취소</button>
-            <button onClick={saveDraft} className="rounded-2xl bg-stone-100 px-5 py-3 text-sm font-black text-stone-950 hover:bg-white" type="button">
-              저장
-            </button>
-          </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+      <div className="mt-5 flex justify-end gap-2">
+        <button onClick={onClose} className="rounded-2xl px-4 py-3 text-sm font-black text-stone-500 hover:bg-stone-900" type="button">취소</button>
+        <button onClick={saveDraft} className="rounded-2xl bg-stone-100 px-5 py-3 text-sm font-black text-stone-950 hover:bg-white" type="button">
+          저장
+        </button>
+      </div>
+    </ModalPresence>
   );
 }
 
@@ -744,56 +735,43 @@ function AddCharacterModal({ onClose, onSaveCharacter }) {
   }
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="character-modal-shell fixed bottom-0 left-0 top-0 z-40 grid place-items-center bg-black/65 p-6 backdrop-blur-sm"
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 16 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 16 }}
-          className="w-full max-w-3xl overflow-hidden rounded-[2rem] border border-slate-700 bg-slate-950 text-stone-100 shadow-2xl"
-        >
-          <div className="flex items-start justify-between gap-4 border-b border-slate-800 p-5">
-            <div>
-              <p className="mb-1 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-sky-200/70">
-                <UserRound className="h-4 w-4" />Character
-              </p>
-              <h2 className="text-2xl font-black">등장인물 추가</h2>
-            </div>
-            <button onClick={onClose} className="rounded-2xl border border-slate-800 bg-slate-900 p-3 hover:bg-slate-800" type="button">
-              <X className="h-5 w-5" />
-            </button>
-          </div>
+    <ModalPresence
+      overlayClassName="character-modal-shell fixed bottom-0 left-0 top-0 z-40 grid place-items-center bg-black/65 p-6 backdrop-blur-sm"
+      panelClassName="w-full max-w-3xl overflow-hidden rounded-[2rem] border border-slate-700 bg-slate-950 text-stone-100 shadow-2xl"
+    >
+      <div className="flex items-start justify-between gap-4 border-b border-slate-800 p-5">
+        <div>
+          <p className="mb-1 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-sky-200/70">
+            <UserRound className="h-4 w-4" />Character
+          </p>
+          <h2 className="text-2xl font-black">등장인물 추가</h2>
+        </div>
+        <CloseButton className={SLATE_CLOSE_BUTTON_CLASS} onClose={onClose} />
+      </div>
 
-          <div className="grid grid-cols-[180px_1fr] gap-5 p-5">
-            <div>
-              <div className="grid h-36 w-36 place-items-center rounded-3xl border border-dashed border-slate-700 bg-slate-900 text-slate-500">
-                <UserRound className="h-14 w-14" />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <label className="block">
-                <span className="mb-1 block text-xs font-black text-slate-500">이름</span>
-                <input className="w-full rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm font-bold outline-none focus:border-slate-500" value={draft.name} onChange={(event) => updateDraft("name", event.target.value)} placeholder="Ethan Carter" />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-xs font-black text-slate-500">인물 메모</span>
-                <textarea className="h-28 w-full resize-none rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm outline-none focus:border-slate-500" value={draft.description} onChange={(event) => updateDraft("description", event.target.value)} placeholder="스토리에서 어떤 인물인지 적습니다." />
-              </label>
-            </div>
+      <div className="grid grid-cols-[180px_1fr] gap-5 p-5">
+        <div>
+          <div className="grid h-36 w-36 place-items-center rounded-3xl border border-dashed border-slate-700 bg-slate-900 text-slate-500">
+            <UserRound className="h-14 w-14" />
           </div>
+        </div>
 
-          <div className="flex justify-end gap-2 border-t border-slate-800 p-5">
-            <button onClick={onClose} className="rounded-2xl px-4 py-3 text-sm font-black text-slate-500 hover:bg-slate-900" type="button">취소</button>
-            <button onClick={saveDraft} className="rounded-2xl bg-stone-100 px-5 py-3 text-sm font-black text-stone-950 hover:bg-white" type="button">추가</button>
-          </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+        <div className="space-y-3">
+          <label className="block">
+            <span className="mb-1 block text-xs font-black text-slate-500">이름</span>
+            <input className="w-full rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm font-bold outline-none focus:border-slate-500" value={draft.name} onChange={(event) => updateDraft("name", event.target.value)} placeholder="Ethan Carter" />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-xs font-black text-slate-500">인물 메모</span>
+            <textarea className="h-28 w-full resize-none rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm outline-none focus:border-slate-500" value={draft.description} onChange={(event) => updateDraft("description", event.target.value)} placeholder="스토리에서 어떤 인물인지 적습니다." />
+          </label>
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-2 border-t border-slate-800 p-5">
+        <button onClick={onClose} className="rounded-2xl px-4 py-3 text-sm font-black text-slate-500 hover:bg-slate-900" type="button">취소</button>
+        <button onClick={saveDraft} className="rounded-2xl bg-stone-100 px-5 py-3 text-sm font-black text-stone-950 hover:bg-white" type="button">추가</button>
+      </div>
+    </ModalPresence>
   );
 }
