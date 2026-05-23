@@ -209,11 +209,14 @@ img {
   top: 32px;
   right: calc(32px + var(--word-panel-width) + 24px);
   bottom: 116px;
+  left: 32px;
   z-index: 10;
-  width: 260px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: grid;
+  grid-auto-rows: 128px;
+  grid-template-columns: repeat(auto-fill, 260px);
+  align-content: start;
+  justify-content: start;
+  gap: 12px;
   overflow-y: auto;
   margin: 0;
   padding: 0;
@@ -247,7 +250,6 @@ img {
   position: relative;
   width: 100%;
   height: 128px;
-  flex: 0 0 128px;
   overflow: hidden;
   border: 1px solid rgba(120, 53, 15, 0.4);
   border-radius: 14px;
@@ -263,6 +265,10 @@ img {
 
 .study-template .note-card:hover {
   background: #fffbeb;
+}
+
+.study-template .note-card.is-dragging {
+  opacity: 0.46;
 }
 
 .study-template .drag-handle {
@@ -804,10 +810,10 @@ img {
     position: relative;
     inset: auto;
     width: 100%;
-    display: grid;
     height: auto;
     min-height: 520px;
-    gap: 12px;
+    grid-auto-rows: 128px;
+    grid-template-columns: 1fr;
     padding-bottom: 24px;
   }
 

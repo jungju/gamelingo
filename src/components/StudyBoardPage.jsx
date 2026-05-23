@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AnimatePresence, motion, Reorder, useDragControls } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
   BookOpen,
@@ -94,20 +94,20 @@ export function StudyBoardPage({
     closeSentenceModal();
   }
 
-  function reorderSentences(reorderedSentences) {
-    const reorderedIds = reorderedSentences.map((sentence) => sentence.id);
-
+  function moveSentenceToIndex(sentenceId, targetIndex) {
     setData((previousData) => {
-      const previousSentencesById = new Map(previousData.sentences.map((sentence) => [sentence.id, sentence]));
-      const reorderedIdSet = new Set(reorderedIds);
-      const orderedSentences = reorderedIds
-        .map((sentenceId) => previousSentencesById.get(sentenceId))
-        .filter(Boolean);
-      const remainingSentences = previousData.sentences.filter((sentence) => !reorderedIdSet.has(sentence.id));
+      const currentIndex = previousData.sentences.findIndex((sentence) => sentence.id === sentenceId);
+      if (currentIndex === -1) return previousData;
+
+      const nextSentences = [...previousData.sentences];
+      const [movedSentence] = nextSentences.splice(currentIndex, 1);
+      const adjustedTargetIndex = targetIndex > currentIndex ? targetIndex - 1 : targetIndex;
+      const nextIndex = Math.max(0, Math.min(adjustedTargetIndex, nextSentences.length));
+      nextSentences.splice(nextIndex, 0, movedSentence);
 
       return {
         ...previousData,
-        sentences: [...orderedSentences, ...remainingSentences],
+        sentences: nextSentences,
       };
     });
   }
@@ -209,7 +209,7 @@ export function StudyBoardPage({
         onOpenCharacter={(character) => setOpenedCharacterId(character.id)}
         onOpenNote={(sentence) => setOpenedSentenceId(sentence.id)}
         onOpenWord={(word) => setWordForm({ open: true, mode: "edit", word })}
-        onReorderSentences={reorderSentences}
+        onMoveSentenceToIndex={moveSentenceToIndex}
       />
       {isNewSentenceOpen || openedSentence ? (
         <SentenceBoardModal
@@ -301,8 +301,23 @@ function Board({
   onOpenCharacter,
   onOpenNote,
   onOpenWord,
-  onReorderSentences,
+  onMoveSentenceToIndex,
 }) {
+  const [draggingSentenceId, setDraggingSentenceId] = useState(null);
+
+  function getDraggedSentenceId(event) {
+    return event.dataTransfer.getData("application/x-gamelingo-sentence-id") || draggingSentenceId;
+  }
+
+  function moveDraggedSentence(event, targetIndex) {
+    event.preventDefault();
+    const sentenceId = getDraggedSentenceId(event);
+    if (!sentenceId) return;
+
+    onMoveSentenceToIndex(sentenceId, targetIndex);
+    setDraggingSentenceId(null);
+  }
+
   return (
     <main className="board">
       <div className="board-grid" />
@@ -314,11 +329,14 @@ function Board({
           </div>
         </div>
       ) : (
-        <Reorder.Group
-          axis="y"
-          values={sentences}
-          onReorder={onReorderSentences}
+        <div
           className="note-list"
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={(event) => {
+            if (event.target === event.currentTarget) {
+              moveDraggedSentence(event, sentences.length);
+            }
+          }}
         >
           {sentences.map((sentence, index) => (
             <NoteCard
@@ -326,10 +344,19 @@ function Board({
               sentence={sentence}
               sentenceIndex={index}
               vocabulary={vocabulary}
+              isDragging={draggingSentenceId === sentence.id}
+              onDragEnd={() => setDraggingSentenceId(null)}
+              onDragStart={(event) => {
+                event.dataTransfer.effectAllowed = "move";
+                event.dataTransfer.setData("application/x-gamelingo-sentence-id", sentence.id);
+                event.dataTransfer.setData("text/plain", sentence.id);
+                setDraggingSentenceId(sentence.id);
+              }}
+              onDropAtIndex={moveDraggedSentence}
               onOpen={onOpenNote}
             />
           ))}
-        </Reorder.Group>
+        </div>
       )}
       <WordBoardNote vocabulary={vocabulary} onAddWord={onAddWord} onOpenWord={onOpenWord} />
       <div className="character-strip">
@@ -346,26 +373,36 @@ function Board({
   );
 }
 
-function NoteCard({ sentence, sentenceIndex, vocabulary, onOpen }) {
-  const dragControls = useDragControls();
+function NoteCard({
+  sentence,
+  sentenceIndex,
+  vocabulary,
+  isDragging,
+  onDragEnd,
+  onDragStart,
+  onDropAtIndex,
+  onOpen,
+}) {
   const words = findVocabularyForSentence(sentence, vocabulary);
 
   return (
-    <Reorder.Item
-      value={sentence}
-      dragControls={dragControls}
-      dragListener={false}
-      dragMomentum={false}
+    <motion.article
       initial={{ opacity: 0, scale: 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
-      whileDrag={{ scale: 1.01 }}
-      className="note-card"
+      whileHover={{ y: -1 }}
+      className={`note-card${isDragging ? " is-dragging" : ""}`}
+      onDragOver={(event) => event.preventDefault()}
+      onDrop={(event) => {
+        event.stopPropagation();
+        const rect = event.currentTarget.getBoundingClientRect();
+        const shouldPlaceAfter = event.clientX > rect.left + rect.width / 2;
+        onDropAtIndex(event, sentenceIndex + (shouldPlaceAfter ? 1 : 0));
+      }}
     >
       <button
-        onPointerDown={(event) => {
-          event.stopPropagation();
-          dragControls.start(event);
-        }}
+        draggable
+        onDragEnd={onDragEnd}
+        onDragStart={onDragStart}
         className="drag-handle"
         title="노트 순서 변경"
         type="button"
@@ -388,7 +425,7 @@ function NoteCard({ sentence, sentenceIndex, vocabulary, onOpen }) {
           ))}
         </div>
       </button>
-    </Reorder.Item>
+    </motion.article>
   );
 }
 
