@@ -61,7 +61,8 @@ panel, and a bottom character rail.
   required English original text and optional Korean/meaning text.
 - The note modal can hide or show the Korean/meaning field and can delete an
   existing sentence.
-- The right `영단어` panel uses a `수정` button for whole-vocabulary editing.
+- The right `영단어` panel uses an icon-only pencil button for
+  whole-vocabulary editing.
 - The vocabulary editor is a multiline text area. Each non-empty line is parsed
   as `{english}: {translation}`.
 - Saving vocabulary text replaces the displayed vocabulary with parsed entries

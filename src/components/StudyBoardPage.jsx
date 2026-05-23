@@ -402,8 +402,14 @@ function WordBoardNote({ vocabulary, onEditVocabulary }) {
           <h3 className="word-title">영단어</h3>
           <span className="count-badge">{vocabulary.length}개</span>
         </div>
-        <button onClick={onEditVocabulary} className="small-button" title="영단어 수정" type="button">
-          <PencilLine className="h-3.5 w-3.5" />수정
+        <button
+          onClick={onEditVocabulary}
+          className="small-button"
+          title="영단어 수정"
+          aria-label="영단어 수정"
+          type="button"
+        >
+          <PencilLine className="h-3.5 w-3.5" />
         </button>
       </div>
 
