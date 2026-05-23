@@ -175,6 +175,8 @@ img {
 }
 
 .study-template .board {
+  --word-panel-width: 360px;
+
   position: relative;
   height: calc(100vh - 76px);
   overflow: hidden;
@@ -203,21 +205,24 @@ img {
 }
 
 .study-template .note-list {
-  position: relative;
+  position: absolute;
+  top: 32px;
+  right: calc(32px + var(--word-panel-width) + 24px);
+  bottom: 116px;
   z-index: 10;
-  width: clamp(220px, 30vw, 300px);
-  height: calc(100% - 104px);
+  width: 260px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   overflow-y: auto;
   margin: 0;
-  padding: 32px 0 120px 32px;
+  padding: 0;
   list-style: none;
 }
 
 .study-template .empty-board-note {
-  max-width: 280px;
+  width: 260px;
+  min-height: 128px;
   border: 1px dashed rgba(120, 53, 15, 0.5);
   border-radius: 18px;
   background: rgba(12, 10, 9, 0.72);
@@ -241,7 +246,9 @@ img {
 .study-template .note-card {
   position: relative;
   width: 100%;
-  flex: 0 0 auto;
+  height: 128px;
+  flex: 0 0 128px;
+  overflow: hidden;
   border: 1px solid rgba(120, 53, 15, 0.4);
   border-radius: 14px;
   background: rgba(254, 243, 199, 0.96);
@@ -280,6 +287,8 @@ img {
 .study-template .note-body-button {
   display: block;
   width: 100%;
+  height: 100%;
+  overflow: hidden;
   border: 0;
   background: transparent;
   color: inherit;
@@ -303,10 +312,14 @@ img {
 }
 
 .study-template .note-title {
+  display: -webkit-box;
   margin: 0;
+  overflow: hidden;
   font-size: 14px;
   font-weight: 900;
   line-height: 1.2;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
 }
 
 .study-template .note-summary {
@@ -325,14 +338,20 @@ img {
   flex-wrap: wrap;
   gap: 5px;
   margin-top: 10px;
+  max-height: 23px;
+  overflow: hidden;
 }
 
 .study-template .tag {
+  max-width: 100%;
+  overflow: hidden;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.1);
   padding: 4px 8px;
   font-size: 10px;
   font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .study-template .word-panel {
@@ -341,7 +360,7 @@ img {
   right: 32px;
   bottom: 20px;
   z-index: 60;
-  width: 360px;
+  width: var(--word-panel-width);
   display: flex;
   flex-direction: column;
   border: 1px solid #44403c;
@@ -729,12 +748,12 @@ img {
 }
 
 @media (max-width: 1100px) {
-  .study-template .search-box {
-    display: none;
+  .study-template .board {
+    --word-panel-width: 320px;
   }
 
-  .study-template .word-panel {
-    width: 320px;
+  .study-template .search-box {
+    display: none;
   }
 
   .study-template .character-scroll {
@@ -782,6 +801,9 @@ img {
   }
 
   .study-template .note-list {
+    position: relative;
+    inset: auto;
+    width: 100%;
     display: grid;
     height: auto;
     min-height: 520px;
