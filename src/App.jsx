@@ -223,6 +223,8 @@ function createDefaultEdithFinchData() {
     storyMemo: "",
     missionChecks: createDefaultMissionChecks(),
     sentences: sampleSentences,
+    templates: [],
+    characters: [],
   };
 }
 
@@ -233,6 +235,8 @@ function createEmptyGameNoteData() {
     storyMemo: "",
     missionChecks: createDefaultMissionChecks(),
     sentences: [],
+    templates: [],
+    characters: [],
   };
 }
 
@@ -257,6 +261,21 @@ function createEmptySentenceForm() {
   };
 }
 
+function createEmptyTemplateForm() {
+  return {
+    title: "",
+    body: "",
+    tags: "",
+  };
+}
+
+function createEmptyCharacterForm() {
+  return {
+    name: "",
+    description: "",
+  };
+}
+
 function createId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
     return crypto.randomUUID();
@@ -266,6 +285,14 @@ function createId() {
 
 function createVocabularyId() {
   return `vocabulary-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function createTemplateId() {
+  return `template-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function createCharacterId() {
+  return `character-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 function createGameId(title, existingIds = new Set()) {
@@ -401,6 +428,12 @@ function normalizeGameNoteData(data, gameId) {
     sentences: Array.isArray(data.sentences)
       ? data.sentences.map(normalizeSentence).filter(Boolean)
       : defaultData.sentences,
+    templates: Array.isArray(data.templates)
+      ? data.templates.map(normalizeTemplate).filter(Boolean)
+      : defaultData.templates,
+    characters: Array.isArray(data.characters)
+      ? data.characters.map(normalizeCharacter).filter(Boolean)
+      : defaultData.characters,
   };
 }
 
@@ -415,6 +448,12 @@ function normalizeCompactGameNoteData(data, gameId) {
     sentences: Array.isArray(data?.s)
       ? data.s.map(normalizeCompactSentence).filter(Boolean)
       : defaultData.sentences,
+    templates: Array.isArray(data?.t)
+      ? data.t.map(normalizeCompactTemplate).filter(Boolean)
+      : defaultData.templates,
+    characters: Array.isArray(data?.p)
+      ? data.p.map(normalizeCompactCharacter).filter(Boolean)
+      : defaultData.characters,
   };
 }
 
@@ -441,6 +480,48 @@ function normalizeCompactSentence(sentence) {
   }
 
   return normalizeSentence(sentence);
+}
+
+function normalizeCompactTemplate(template) {
+  if (Array.isArray(template)) {
+    return normalizeTemplate({
+      id: template[0],
+      title: template[1],
+      body: template[2],
+      tags: template[3],
+      createdAt: template[4],
+      updatedAt: template[5],
+    });
+  }
+
+  return normalizeTemplate({
+    id: template?.i || template?.id,
+    title: template?.t || template?.title,
+    body: template?.b || template?.body,
+    tags: template?.g || template?.tags,
+    createdAt: template?.a || template?.createdAt,
+    updatedAt: template?.u || template?.updatedAt,
+  });
+}
+
+function normalizeCompactCharacter(character) {
+  if (Array.isArray(character)) {
+    return normalizeCharacter({
+      id: character[0],
+      name: character[1],
+      description: character[2],
+      createdAt: character[3],
+      updatedAt: character[4],
+    });
+  }
+
+  return normalizeCharacter({
+    id: character?.i || character?.id,
+    name: character?.n || character?.name,
+    description: character?.d || character?.description,
+    createdAt: character?.a || character?.createdAt,
+    updatedAt: character?.u || character?.updatedAt,
+  });
 }
 
 function serializeAppData(data) {
@@ -502,6 +583,14 @@ function serializeGameNoteData(data, gameId) {
     compactData.s = normalizedData.sentences.map(serializeSentence);
   }
 
+  if (normalizedData.templates.length > 0) {
+    compactData.t = normalizedData.templates.map(serializeTemplate);
+  }
+
+  if (normalizedData.characters.length > 0) {
+    compactData.p = normalizedData.characters.map(serializeCharacter);
+  }
+
   return compactData;
 }
 
@@ -531,6 +620,33 @@ function serializeSentence(sentence) {
   }
 
   return compactSentence;
+}
+
+function serializeTemplate(template) {
+  const compactTemplate = {
+    i: template.id,
+    t: template.title,
+    b: template.body,
+  };
+
+  if (template.tags.length > 0) compactTemplate.g = formatTags(template.tags);
+  if (template.createdAt) compactTemplate.a = template.createdAt;
+  if (template.updatedAt) compactTemplate.u = template.updatedAt;
+
+  return compactTemplate;
+}
+
+function serializeCharacter(character) {
+  const compactCharacter = {
+    i: character.id,
+    n: character.name,
+  };
+
+  if (character.description) compactCharacter.d = character.description;
+  if (character.createdAt) compactCharacter.a = character.createdAt;
+  if (character.updatedAt) compactCharacter.u = character.updatedAt;
+
+  return compactCharacter;
 }
 
 function areSentencesEquivalent(sentences, referenceSentences) {
@@ -680,6 +796,58 @@ function normalizeSentence(sentence) {
     mySentence: typeof sentence.mySentence === "string" ? sentence.mySentence : "",
     practiced: Boolean(sentence.practiced),
   };
+}
+
+function normalizeTemplate(template) {
+  if (!template || typeof template !== "object") {
+    return null;
+  }
+
+  const title = typeof template.title === "string" ? template.title.trim() : "";
+  const body = typeof template.body === "string" ? template.body.trim() : "";
+  if (!title || !body) return null;
+
+  const timestamp = new Date().toISOString();
+
+  return {
+    id: typeof template.id === "string" && template.id.trim() ? template.id : createTemplateId(),
+    title,
+    body,
+    tags: normalizeTags(template.tags),
+    createdAt: typeof template.createdAt === "string" ? template.createdAt : timestamp,
+    updatedAt: typeof template.updatedAt === "string" ? template.updatedAt : timestamp,
+  };
+}
+
+function normalizeCharacter(character) {
+  if (!character || typeof character !== "object") {
+    return null;
+  }
+
+  const name = typeof character.name === "string" ? character.name.trim() : "";
+  if (!name) return null;
+
+  const timestamp = new Date().toISOString();
+
+  return {
+    id: typeof character.id === "string" && character.id.trim() ? character.id : createCharacterId(),
+    name,
+    description: typeof character.description === "string" ? character.description.trim() : "",
+    createdAt: typeof character.createdAt === "string" ? character.createdAt : timestamp,
+    updatedAt: typeof character.updatedAt === "string" ? character.updatedAt : timestamp,
+  };
+}
+
+function normalizeTags(tags) {
+  const rawTags = Array.isArray(tags) ? tags : typeof tags === "string" ? tags.split(",") : [];
+
+  return rawTags
+    .map((tag) => (typeof tag === "string" ? tag.trim() : ""))
+    .filter(Boolean);
+}
+
+function formatTags(tags) {
+  return normalizeTags(tags).join(", ");
 }
 
 function normalizeRoutePath(path) {
@@ -1382,6 +1550,7 @@ export default function App() {
       {selectedGameInfo ? (
         <main className="main-content">
           <StudyGamePage
+            key={selectedGameInfo.id}
             game={selectedGameInfo}
             data={selectedGameData}
             setData={setSelectedGameData}
@@ -1691,6 +1860,11 @@ function StudyGamePage({
 }) {
   const [editingSentenceId, setEditingSentenceId] = useState(null);
   const [sentenceForm, setSentenceForm] = useState(createEmptySentenceForm());
+  const [editingTemplateId, setEditingTemplateId] = useState(null);
+  const [templateForm, setTemplateForm] = useState(createEmptyTemplateForm());
+  const [templateSearch, setTemplateSearch] = useState("");
+  const [editingCharacterId, setEditingCharacterId] = useState(null);
+  const [characterForm, setCharacterForm] = useState(createEmptyCharacterForm());
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [isFamilyTreeOpen, setIsFamilyTreeOpen] = useState(false);
@@ -1768,6 +1942,148 @@ function StudyGamePage({
   function resetSentenceForm() {
     setSentenceForm(createEmptySentenceForm());
     setEditingSentenceId(null);
+  }
+
+  function updateTemplateForm(field, value) {
+    setTemplateForm((previousForm) => ({
+      ...previousForm,
+      [field]: value,
+    }));
+  }
+
+  function resetTemplateForm() {
+    setTemplateForm(createEmptyTemplateForm());
+    setEditingTemplateId(null);
+  }
+
+  function saveTemplate(event) {
+    event.preventDefault();
+
+    const title = templateForm.title.trim();
+    const body = templateForm.body.trim();
+    if (!title || !body) return;
+
+    const tags = normalizeTags(templateForm.tags);
+    const timestamp = new Date().toISOString();
+
+    if (editingTemplateId) {
+      setData((previousData) => ({
+        ...previousData,
+        templates: (previousData.templates || []).map((template) =>
+          template.id === editingTemplateId
+            ? {
+                ...template,
+                title,
+                body,
+                tags,
+                updatedAt: timestamp,
+              }
+            : template
+        ),
+      }));
+    } else {
+      const newTemplate = {
+        id: createTemplateId(),
+        title,
+        body,
+        tags,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      };
+
+      setData((previousData) => ({
+        ...previousData,
+        templates: [newTemplate, ...(previousData.templates || [])],
+      }));
+    }
+
+    resetTemplateForm();
+  }
+
+  function editTemplate(template) {
+    setEditingTemplateId(template.id);
+    setTemplateForm({
+      title: template.title,
+      body: template.body,
+      tags: formatTags(template.tags),
+    });
+  }
+
+  function deleteTemplate(templateId) {
+    setData((previousData) => ({
+      ...previousData,
+      templates: (previousData.templates || []).filter((template) => template.id !== templateId),
+    }));
+    if (templateId === editingTemplateId) resetTemplateForm();
+  }
+
+  function updateCharacterForm(field, value) {
+    setCharacterForm((previousForm) => ({
+      ...previousForm,
+      [field]: value,
+    }));
+  }
+
+  function resetCharacterForm() {
+    setCharacterForm(createEmptyCharacterForm());
+    setEditingCharacterId(null);
+  }
+
+  function saveCharacter(event) {
+    event.preventDefault();
+
+    const name = characterForm.name.trim();
+    if (!name) return;
+
+    const description = characterForm.description.trim();
+    const timestamp = new Date().toISOString();
+
+    if (editingCharacterId) {
+      setData((previousData) => ({
+        ...previousData,
+        characters: (previousData.characters || []).map((character) =>
+          character.id === editingCharacterId
+            ? {
+                ...character,
+                name,
+                description,
+                updatedAt: timestamp,
+              }
+            : character
+        ),
+      }));
+    } else {
+      const newCharacter = {
+        id: createCharacterId(),
+        name,
+        description,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      };
+
+      setData((previousData) => ({
+        ...previousData,
+        characters: [newCharacter, ...(previousData.characters || [])],
+      }));
+    }
+
+    resetCharacterForm();
+  }
+
+  function editCharacter(character) {
+    setEditingCharacterId(character.id);
+    setCharacterForm({
+      name: character.name,
+      description: character.description,
+    });
+  }
+
+  function deleteCharacter(characterId) {
+    setData((previousData) => ({
+      ...previousData,
+      characters: (previousData.characters || []).filter((character) => character.id !== characterId),
+    }));
+    if (characterId === editingCharacterId) resetCharacterForm();
   }
 
   function saveSentence(event) {
@@ -1921,9 +2237,31 @@ function StudyGamePage({
           <div className="study-main-grid">
             <div className="left-column">
               <MissionPanel missionChecks={data.missionChecks} onToggleMission={toggleMissionCheck} />
+              <CharacterPanel
+                characters={data.characters}
+                form={characterForm}
+                editingCharacterId={editingCharacterId}
+                onCancelEdit={resetCharacterForm}
+                onDeleteCharacter={deleteCharacter}
+                onEditCharacter={editCharacter}
+                onSaveCharacter={saveCharacter}
+                onUpdateForm={updateCharacterForm}
+              />
             </div>
 
             <div className="right-column">
+              <TemplatePanel
+                templates={data.templates}
+                form={templateForm}
+                search={templateSearch}
+                editingTemplateId={editingTemplateId}
+                onCancelEdit={resetTemplateForm}
+                onDeleteTemplate={deleteTemplate}
+                onEditTemplate={editTemplate}
+                onSaveTemplate={saveTemplate}
+                onSearchChange={setTemplateSearch}
+                onUpdateForm={updateTemplateForm}
+              />
               <SentenceList
                 sentences={data.sentences}
                 onDeleteSentence={deleteSentence}
@@ -2201,6 +2539,207 @@ function MissionPanel({ missionChecks, onToggleMission }) {
             <span className="toggle-copy">{item.label}</span>
           </label>
         ))}
+      </div>
+    </section>
+  );
+}
+
+function TemplatePanel({
+  templates,
+  form,
+  search,
+  editingTemplateId,
+  onCancelEdit,
+  onDeleteTemplate,
+  onEditTemplate,
+  onSaveTemplate,
+  onSearchChange,
+  onUpdateForm,
+}) {
+  const safeTemplates = Array.isArray(templates) ? templates : [];
+  const normalizedSearch = search.trim().toLowerCase();
+  const visibleTemplates = normalizedSearch
+    ? safeTemplates.filter((template) => {
+        const searchableText = [template.title, template.body, ...(template.tags || [])].join(" ").toLowerCase();
+        return searchableText.includes(normalizedSearch);
+      })
+    : safeTemplates;
+
+  return (
+    <section className="panel template-panel">
+      <div className="panel-heading">
+        <div>
+          <h2>템플릿 카드</h2>
+          <p>긴 문장이나 자주 참고할 표현을 카드로 저장합니다.</p>
+        </div>
+        <span className="small-badge">{safeTemplates.length}개</span>
+      </div>
+
+      <form className="template-form" onSubmit={onSaveTemplate}>
+        <label className="field">
+          <span>제목</span>
+          <input
+            value={form.title}
+            onChange={(event) => onUpdateForm("title", event.target.value)}
+            placeholder="감정 표현"
+            required
+          />
+        </label>
+
+        <label className="field">
+          <span>태그</span>
+          <input
+            value={form.tags}
+            onChange={(event) => onUpdateForm("tags", event.target.value)}
+            placeholder="emotion, dialog"
+          />
+        </label>
+
+        <label className="field full-width">
+          <span>본문</span>
+          <textarea
+            value={form.body}
+            onChange={(event) => onUpdateForm("body", event.target.value)}
+            placeholder="게임에서 자주 나오는 긴 문장이나 참고할 표현을 적어둡니다."
+            rows="4"
+            required
+          />
+        </label>
+
+        <div className="button-row">
+          {editingTemplateId ? (
+            <button className="button secondary" type="button" onClick={onCancelEdit}>
+              취소
+            </button>
+          ) : null}
+          <button className="button primary" type="submit">
+            {editingTemplateId ? "수정 저장" : "카드 추가"}
+          </button>
+        </div>
+      </form>
+
+      <label className="field template-search">
+        <span>검색</span>
+        <input
+          value={search}
+          onChange={(event) => onSearchChange(event.target.value)}
+          placeholder="제목, 본문, 태그로 찾기"
+        />
+      </label>
+
+      <div className="template-card-list">
+        {safeTemplates.length === 0 ? (
+          <p className="empty-message">아직 저장한 템플릿 카드가 없습니다.</p>
+        ) : visibleTemplates.length === 0 ? (
+          <p className="empty-message">검색 결과가 없습니다.</p>
+        ) : (
+          visibleTemplates.map((template) => (
+            <article key={template.id} className="template-card">
+              <div className="template-card-heading">
+                <h3>{template.title}</h3>
+                <div className="template-card-tools">
+                  <button className="button small secondary" type="button" onClick={() => onEditTemplate(template)}>
+                    수정
+                  </button>
+                  <button className="button small danger" type="button" onClick={() => onDeleteTemplate(template.id)}>
+                    삭제
+                  </button>
+                </div>
+              </div>
+              {(template.tags || []).length > 0 ? (
+                <div className="tag-list" aria-label="템플릿 태그">
+                  {(template.tags || []).map((tag) => (
+                    <span key={tag} className="tag-pill">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              <p className="template-body">{template.body}</p>
+            </article>
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
+
+function CharacterPanel({
+  characters,
+  form,
+  editingCharacterId,
+  onCancelEdit,
+  onDeleteCharacter,
+  onEditCharacter,
+  onSaveCharacter,
+  onUpdateForm,
+}) {
+  const safeCharacters = Array.isArray(characters) ? characters : [];
+
+  return (
+    <section className="panel character-panel">
+      <div className="panel-heading">
+        <div>
+          <h2>등장인물</h2>
+          <p>게임별 인물 이름과 짧은 설명을 정리합니다.</p>
+        </div>
+        <span className="small-badge">{safeCharacters.length}명</span>
+      </div>
+
+      <form className="character-form" onSubmit={onSaveCharacter}>
+        <label className="field">
+          <span>이름</span>
+          <input
+            value={form.name}
+            onChange={(event) => onUpdateForm("name", event.target.value)}
+            placeholder="Edith Finch"
+            required
+          />
+        </label>
+
+        <label className="field">
+          <span>설명</span>
+          <textarea
+            value={form.description}
+            onChange={(event) => onUpdateForm("description", event.target.value)}
+            placeholder="기억해둘 관계나 특징"
+            rows="3"
+          />
+        </label>
+
+        <div className="button-row">
+          {editingCharacterId ? (
+            <button className="button secondary" type="button" onClick={onCancelEdit}>
+              취소
+            </button>
+          ) : null}
+          <button className="button primary" type="submit">
+            {editingCharacterId ? "수정 저장" : "인물 추가"}
+          </button>
+        </div>
+      </form>
+
+      <div className="character-list">
+        {safeCharacters.length === 0 ? (
+          <p className="empty-message">아직 저장한 등장인물이 없습니다.</p>
+        ) : (
+          safeCharacters.map((character) => (
+            <article key={character.id} className="character-card">
+              <div>
+                <h3>{character.name}</h3>
+                {character.description ? <p>{character.description}</p> : null}
+              </div>
+              <div className="character-card-tools">
+                <button className="button small secondary" type="button" onClick={() => onEditCharacter(character)}>
+                  수정
+                </button>
+                <button className="button small danger" type="button" onClick={() => onDeleteCharacter(character.id)}>
+                  삭제
+                </button>
+              </div>
+            </article>
+          ))
+        )}
       </div>
     </section>
   );
