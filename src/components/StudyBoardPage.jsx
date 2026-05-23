@@ -505,7 +505,7 @@ function SentenceBoardModal({ sentence, onClose, onDeleteSentence, onSaveSentenc
         <div className="modal-actions">
           <button className="toggle-button" type="button" onClick={() => setShowKorean((previous) => !previous)}>
             <span>{showKorean ? "◑" : "◐"}</span>
-            <span>{showKorean ? "한글 숨기기" : "한글 보기"}</span>
+            <span>{showKorean ? "한글 / 해석 숨기기" : "한글 / 해석 보기"}</span>
           </button>
           <CloseButton onClose={onClose} />
         </div>
