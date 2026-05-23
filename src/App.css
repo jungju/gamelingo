@@ -13,6 +13,27 @@
 
 * {
   box-sizing: border-box;
+  scrollbar-color: #57534e #0c0a09;
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #0c0a09;
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 2px solid #0c0a09;
+  border-radius: 999px;
+  background: #57534e;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #78716c;
 }
 
 body {
