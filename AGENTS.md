@@ -17,7 +17,10 @@ For this project, after finishing any development change:
 
 Do not push, deploy, or wait for the GitHub Pages workflow unless the user explicitly asks for it.
 
-The user may batch pushes and deployments manually. When a push to `main` happens, GitHub Pages is still deployed by the `Deploy to GitHub Pages` GitHub Actions workflow, but agents should not verify that workflow by default.
+GitHub Pages deploys through `.github/workflows/deploy-pages.yml` after pushes
+to `main`, or by manually dispatching that workflow. Agents should not wait for
+or verify the workflow unless the user explicitly asks for it. Local `gh-pages`
+branch publishes are not the normal deployment path.
 
 ## Commit Message Rule
 

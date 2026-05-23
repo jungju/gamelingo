@@ -91,6 +91,12 @@ npm run lint
 npm run build
 ```
 
+## 배포
+
+- `main` 브랜치 push 시 `.github/workflows/deploy-pages.yml`이 GitHub Pages에 배포합니다.
+- 수동 재배포가 필요하면 `gh workflow run deploy-pages.yml --ref main`을 실행합니다.
+- 로컬에서 `dist`를 `gh-pages` 브랜치로 직접 publish하지 않습니다.
+
 ## 사용 방법
 
 1. 홈 화면에서 기본 게임을 고르거나 `게임 추가`로 개인 게임을 만듭니다.
