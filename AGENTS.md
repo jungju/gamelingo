@@ -15,9 +15,9 @@ For this project, after finishing any development change:
 3. Stage only the intended files.
 4. Commit the completed change with `scripts/agent-commit.sh`.
 
-Do not push or deploy unless the user explicitly asks for it.
+Do not push, deploy, or wait for the GitHub Pages workflow unless the user explicitly asks for it.
 
-The site is deployed by the `Deploy to GitHub Pages` GitHub Actions workflow after pushes to `main`.
+The user may batch pushes and deployments manually. When a push to `main` happens, GitHub Pages is still deployed by the `Deploy to GitHub Pages` GitHub Actions workflow, but agents should not verify that workflow by default.
 
 ## Commit Message Rule
 
