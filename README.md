@@ -10,6 +10,16 @@
 - `README.md`: 실행 방법, 사용 흐름, ohmesh 저장 형식, 게임 추가 위치
 - `AGENTS.md`: 에이전트 검증과 커밋 규칙
 
+## 코드 구조
+
+- `src/App.jsx`: 라우팅, 인증 상태, 게스트/ohmesh 저장 흐름을 조율하는 앱 컨테이너
+- `src/constants.js`: 저장 키, record type, 기본 게임, 기본 샘플 데이터
+- `src/gameState.js`: 앱 데이터 정규화, v3 압축 저장 포맷 직렬화, 게임/노트 헬퍼
+- `src/ohmeshClient.js`: ohmesh 요청, redirect, localStorage, route path 헬퍼
+- `src/components/HomePage.jsx`: 게임 선택, 게임 추가/수정/삭제 UI
+- `src/components/StudyBoardPage.jsx`: 게임 선택 후 보이는 공부 보드와 노트/단어/인물 모달
+- `src/components/Shared.jsx`: 공통 배지와 게임 커버
+
 ## 실행 방법
 
 ```bash

@@ -9,11 +9,21 @@ document navigation. The README remains the human quick-start and usage guide.
 
 - `README.md`: current user flow, local commands, ohmesh data shape, and game
   addition guide
-- `src/App.jsx`: current single-page app structure and game registry
+- `src/App.jsx`: current single-page app shell, route selection, auth/storage
+  orchestration
+- `src/constants.js`: stable app constants, default game metadata, sample study
+  defaults
+- `src/gameState.js`: runtime state normalization, migration, compact v3
+  serialization, game/note helper functions
+- `src/ohmeshClient.js`: ohmesh request, redirect, route, and guest storage
+  helpers
+- `src/components/HomePage.jsx`: game selection and custom game management UI
+- `src/components/StudyBoardPage.jsx`: selected-game study board UI and note,
+  vocabulary, character editing surfaces
 - `AGENTS.md`: agent workflow, validation, and commit rules
 
 When these files disagree, use `README.md` for user-facing behavior and
-`src/App.jsx` for the implemented app structure.
+`src/App.jsx` plus the focused module above for the implemented app structure.
 
 ## Product Scope
 
