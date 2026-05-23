@@ -684,16 +684,16 @@ function VocabularyEditorModal({ vocabulary, onClose, onSaveVocabulary }) {
           initial={{ opacity: 0, scale: 0.96, y: 16 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 16 }}
-          className="w-full max-w-2xl rounded-[2rem] border border-emerald-900/40 bg-emerald-50 p-5 text-stone-900 shadow-2xl"
+          className="w-full max-w-2xl rounded-[2rem] border border-stone-700 bg-stone-950 p-5 text-stone-100 shadow-2xl"
         >
           <div className="mb-5 flex items-start justify-between gap-4">
             <div>
-              <p className="mb-1 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-emerald-800/60">
+              <p className="mb-1 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-stone-500">
                 <Languages className="h-4 w-4" />Vocabulary
               </p>
               <h2 className="text-2xl font-black">영단어 수정</h2>
             </div>
-            <button onClick={onClose} className="rounded-2xl bg-black/10 p-3 hover:bg-black/15" type="button">
+            <button onClick={onClose} className="rounded-2xl border border-stone-800 bg-stone-900 p-3 hover:bg-stone-800" type="button">
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -703,14 +703,14 @@ function VocabularyEditorModal({ vocabulary, onClose, onSaveVocabulary }) {
             <textarea
               value={text}
               onChange={(event) => setText(event.target.value)}
-              className="h-80 w-full resize-none rounded-2xl border border-emerald-900/20 bg-white/70 px-4 py-3 font-mono text-sm leading-6 outline-none focus:border-emerald-700"
+              className="h-80 w-full resize-none rounded-2xl border border-stone-800 bg-stone-900 px-4 py-3 font-mono text-sm leading-6 text-stone-100 outline-none placeholder:text-stone-600 focus:border-stone-500"
               placeholder={"alive: 살아 있는\nattic: 다락방\nmemory: 기억"}
             />
           </label>
 
           <div className="mt-5 flex justify-end gap-2">
-            <button onClick={onClose} className="rounded-2xl px-4 py-3 text-sm font-black text-stone-500 hover:bg-black/10" type="button">취소</button>
-            <button onClick={saveDraft} className="rounded-2xl bg-stone-950 px-5 py-3 text-sm font-black text-white hover:bg-stone-800" type="button">
+            <button onClick={onClose} className="rounded-2xl px-4 py-3 text-sm font-black text-stone-500 hover:bg-stone-900" type="button">취소</button>
+            <button onClick={saveDraft} className="rounded-2xl bg-stone-100 px-5 py-3 text-sm font-black text-stone-950 hover:bg-white" type="button">
               저장
             </button>
           </div>
