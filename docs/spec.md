@@ -24,7 +24,8 @@ The current product includes `What Remains of Edith Finch` as the built-in game
 and lets each user add personal games that share the same study note workflow:
 missions, vocabulary, story notes, sentence cards, local guest storage, and
 game-specific note UI templates, character lists, optional ohmesh-backed
-account storage.
+account storage. The default note UI keeps missions visible; the card popup UI
+hides missions and shows compact vertical sentence cards.
 
 ## Data Contract
 

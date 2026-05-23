@@ -1863,6 +1863,7 @@ function StudyGamePage({
   const [isStoryDrawerOpen, setIsStoryDrawerOpen] = useState(false);
   const [isVocabularyDrawerOpen, setIsVocabularyDrawerOpen] = useState(false);
   const isEdithFinch = game.id === EDITH_FINCH_ID;
+  const isCardPopupTemplate = data.uiTemplate === CARD_POPUP_UI_TEMPLATE;
   const guide = getGameGuide(game);
   const defaultVocabulary = createDefaultGameNoteData(game.id).vocabulary;
 
@@ -2155,7 +2156,9 @@ function StudyGamePage({
 
           <div className="study-main-grid">
             <div className="left-column">
-              <MissionPanel missionChecks={data.missionChecks} onToggleMission={toggleMissionCheck} />
+              {isCardPopupTemplate ? null : (
+                <MissionPanel missionChecks={data.missionChecks} onToggleMission={toggleMissionCheck} />
+              )}
               <CharacterPanel
                 characters={data.characters}
                 form={characterForm}
@@ -2627,7 +2630,7 @@ function SentenceList({
         {sentences.length === 0 ? (
           <p className="empty-message">아직 저장한 문장이 없습니다.</p>
         ) : (
-          <div className="sentence-card-grid">
+          <div className="sentence-card-stack">
             {sentences.map((sentence) => (
               <SentencePreviewCard
                 key={sentence.id}
@@ -2680,7 +2683,7 @@ function SentenceList({
 
 function SentencePreviewCard({ sentence, onOpenSentence }) {
   const meaning = sentence.meaning.trim();
-  const previewMeaning = meaning.length > 82 ? `${meaning.slice(0, 82)}...` : meaning;
+  const previewMeaning = meaning.length > 64 ? `${meaning.slice(0, 64)}...` : meaning;
 
   return (
     <button
@@ -2688,9 +2691,15 @@ function SentencePreviewCard({ sentence, onOpenSentence }) {
       type="button"
       onClick={onOpenSentence}
     >
-      <span className="sentence-preview-status">{sentence.practiced ? "연습 완료" : "연습 전"}</span>
-      <strong>{sentence.original}</strong>
-      {previewMeaning ? <span>{previewMeaning}</span> : <span className="empty-preview">뜻을 아직 적지 않았습니다.</span>}
+      <span className="sentence-preview-copy">
+        <strong>{sentence.original}</strong>
+        {previewMeaning ? (
+          <span className="sentence-preview-meaning">{previewMeaning}</span>
+        ) : (
+          <span className="sentence-preview-meaning empty-preview">뜻을 아직 적지 않았습니다.</span>
+        )}
+      </span>
+      <span className="sentence-preview-status">{sentence.practiced ? "완료" : "대기"}</span>
     </button>
   );
 }
