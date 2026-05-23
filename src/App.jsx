@@ -15,6 +15,12 @@ const LEGACY_GUEST_EDITH_FINCH_KEY = "gamelingo:v2:edithFinch:guest";
 const EDITH_FINCH_ID = "edith-finch";
 const HOME_PATH = "/";
 const EDITH_FINCH_COVER = "/edith-finch-cover.png";
+const DEFAULT_UI_TEMPLATE = "default";
+const CARD_POPUP_UI_TEMPLATE = "card-popup";
+const uiTemplateOptions = [
+  { value: DEFAULT_UI_TEMPLATE, label: "기본 UI" },
+  { value: CARD_POPUP_UI_TEMPLATE, label: "카드 팝업 UI" },
+];
 
 const defaultGames = [
   {
@@ -223,8 +229,7 @@ function createDefaultEdithFinchData() {
     storyMemo: "",
     missionChecks: createDefaultMissionChecks(),
     sentences: sampleSentences,
-    templates: [],
-    selectedTemplateId: "",
+    uiTemplate: DEFAULT_UI_TEMPLATE,
     characters: [],
   };
 }
@@ -236,8 +241,7 @@ function createEmptyGameNoteData() {
     storyMemo: "",
     missionChecks: createDefaultMissionChecks(),
     sentences: [],
-    templates: [],
-    selectedTemplateId: "",
+    uiTemplate: DEFAULT_UI_TEMPLATE,
     characters: [],
   };
 }
@@ -263,14 +267,6 @@ function createEmptySentenceForm() {
   };
 }
 
-function createEmptyTemplateForm() {
-  return {
-    title: "",
-    body: "",
-    tags: "",
-  };
-}
-
 function createEmptyCharacterForm() {
   return {
     name: "",
@@ -287,10 +283,6 @@ function createId() {
 
 function createVocabularyId() {
   return `vocabulary-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
-function createTemplateId() {
-  return `template-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 function createCharacterId() {
@@ -421,9 +413,6 @@ function normalizeGameNoteData(data, gameId) {
   }
 
   const vocabulary = normalizeVocabularyEntries(data.vocabulary, data.wordMemo);
-  const templates = Array.isArray(data.templates)
-    ? data.templates.map(normalizeTemplate).filter(Boolean)
-    : defaultData.templates;
 
   return {
     wordMemo: typeof data.wordMemo === "string" ? data.wordMemo : defaultData.wordMemo,
@@ -433,8 +422,7 @@ function normalizeGameNoteData(data, gameId) {
     sentences: Array.isArray(data.sentences)
       ? data.sentences.map(normalizeSentence).filter(Boolean)
       : defaultData.sentences,
-    templates,
-    selectedTemplateId: normalizeSelectedTemplateId(data.selectedTemplateId, templates),
+    uiTemplate: normalizeUITemplate(data.uiTemplate),
     characters: Array.isArray(data.characters)
       ? data.characters.map(normalizeCharacter).filter(Boolean)
       : defaultData.characters,
@@ -443,9 +431,6 @@ function normalizeGameNoteData(data, gameId) {
 
 function normalizeCompactGameNoteData(data, gameId) {
   const defaultData = createDefaultGameNoteData(gameId);
-  const templates = Array.isArray(data?.t)
-    ? data.t.map(normalizeCompactTemplate).filter(Boolean)
-    : defaultData.templates;
 
   return {
     wordMemo: typeof data?.x === "string" ? data.x : defaultData.wordMemo,
@@ -455,8 +440,7 @@ function normalizeCompactGameNoteData(data, gameId) {
     sentences: Array.isArray(data?.s)
       ? data.s.map(normalizeCompactSentence).filter(Boolean)
       : defaultData.sentences,
-    templates,
-    selectedTemplateId: normalizeSelectedTemplateId(data?.q, templates),
+    uiTemplate: normalizeUITemplate(data?.u),
     characters: Array.isArray(data?.p)
       ? data.p.map(normalizeCompactCharacter).filter(Boolean)
       : defaultData.characters,
@@ -486,28 +470,6 @@ function normalizeCompactSentence(sentence) {
   }
 
   return normalizeSentence(sentence);
-}
-
-function normalizeCompactTemplate(template) {
-  if (Array.isArray(template)) {
-    return normalizeTemplate({
-      id: template[0],
-      title: template[1],
-      body: template[2],
-      tags: template[3],
-      createdAt: template[4],
-      updatedAt: template[5],
-    });
-  }
-
-  return normalizeTemplate({
-    id: template?.i || template?.id,
-    title: template?.t || template?.title,
-    body: template?.b || template?.body,
-    tags: template?.g || template?.tags,
-    createdAt: template?.a || template?.createdAt,
-    updatedAt: template?.u || template?.updatedAt,
-  });
 }
 
 function normalizeCompactCharacter(character) {
@@ -589,12 +551,8 @@ function serializeGameNoteData(data, gameId) {
     compactData.s = normalizedData.sentences.map(serializeSentence);
   }
 
-  if (normalizedData.templates.length > 0) {
-    compactData.t = normalizedData.templates.map(serializeTemplate);
-
-    if (normalizeSelectedTemplateId(normalizedData.selectedTemplateId, normalizedData.templates)) {
-      compactData.q = normalizedData.selectedTemplateId;
-    }
+  if (normalizedData.uiTemplate !== DEFAULT_UI_TEMPLATE) {
+    compactData.u = normalizedData.uiTemplate;
   }
 
   if (normalizedData.characters.length > 0) {
@@ -630,20 +588,6 @@ function serializeSentence(sentence) {
   }
 
   return compactSentence;
-}
-
-function serializeTemplate(template) {
-  const compactTemplate = {
-    i: template.id,
-    t: template.title,
-    b: template.body,
-  };
-
-  if (template.tags.length > 0) compactTemplate.g = formatTags(template.tags);
-  if (template.createdAt) compactTemplate.a = template.createdAt;
-  if (template.updatedAt) compactTemplate.u = template.updatedAt;
-
-  return compactTemplate;
 }
 
 function serializeCharacter(character) {
@@ -808,33 +752,8 @@ function normalizeSentence(sentence) {
   };
 }
 
-function normalizeTemplate(template) {
-  if (!template || typeof template !== "object") {
-    return null;
-  }
-
-  const title = typeof template.title === "string" ? template.title.trim() : "";
-  const body = typeof template.body === "string" ? template.body.trim() : "";
-  if (!title || !body) return null;
-
-  const timestamp = new Date().toISOString();
-
-  return {
-    id: typeof template.id === "string" && template.id.trim() ? template.id : createTemplateId(),
-    title,
-    body,
-    tags: normalizeTags(template.tags),
-    createdAt: typeof template.createdAt === "string" ? template.createdAt : timestamp,
-    updatedAt: typeof template.updatedAt === "string" ? template.updatedAt : timestamp,
-  };
-}
-
-function normalizeSelectedTemplateId(selectedTemplateId, templates) {
-  if (typeof selectedTemplateId !== "string" || !selectedTemplateId.trim()) {
-    return "";
-  }
-
-  return templates.some((template) => template.id === selectedTemplateId) ? selectedTemplateId : "";
+function normalizeUITemplate(uiTemplate) {
+  return uiTemplate === CARD_POPUP_UI_TEMPLATE ? CARD_POPUP_UI_TEMPLATE : DEFAULT_UI_TEMPLATE;
 }
 
 function normalizeCharacter(character) {
@@ -854,18 +773,6 @@ function normalizeCharacter(character) {
     createdAt: typeof character.createdAt === "string" ? character.createdAt : timestamp,
     updatedAt: typeof character.updatedAt === "string" ? character.updatedAt : timestamp,
   };
-}
-
-function normalizeTags(tags) {
-  const rawTags = Array.isArray(tags) ? tags : typeof tags === "string" ? tags.split(",") : [];
-
-  return rawTags
-    .map((tag) => (typeof tag === "string" ? tag.trim() : ""))
-    .filter(Boolean);
-}
-
-function formatTags(tags) {
-  return normalizeTags(tags).join(", ");
 }
 
 function normalizeRoutePath(path) {
@@ -1026,14 +933,18 @@ function getSyncStatusLabel(syncState) {
   return "대기";
 }
 
-function createGameLibrary(customGames) {
+function createGameLibrary(customGames, notesByGameId = {}) {
   return [
-    ...defaultGames,
+    ...defaultGames.map((game) => ({
+      ...game,
+      uiTemplate: normalizeUITemplate(notesByGameId[game.id]?.uiTemplate),
+    })),
     ...customGames.map((game) => ({
       ...game,
       path: `/games/${game.id}`,
       description: game.description || "내 게임 문장 노트",
       isCustom: true,
+      uiTemplate: normalizeUITemplate(notesByGameId[game.id]?.uiTemplate),
     })),
   ];
 }
@@ -1418,7 +1329,7 @@ export default function App() {
     };
   }, [authState.status, appData, handleSessionProblem, isRemoteDataReady, storageRecord?.id]);
 
-  const gameLibrary = createGameLibrary(appData.customGames);
+  const gameLibrary = createGameLibrary(appData.customGames, appData.notesByGameId);
   const selectedGameInfo = gameLibrary.find((game) => game.path === routePath);
   const selectedGameData = selectedGameInfo
     ? appData.notesByGameId[selectedGameInfo.id] || createDefaultGameNoteData(selectedGameInfo.id)
@@ -1467,7 +1378,7 @@ export default function App() {
     });
   }
 
-  function createCustomGame({ title, description }) {
+  function createCustomGame({ title, description, uiTemplate }) {
     const timestamp = new Date().toISOString();
     const game = {
       id: createGameId(title, getKnownGameIds(appData)),
@@ -1476,21 +1387,26 @@ export default function App() {
       createdAt: timestamp,
       updatedAt: timestamp,
     };
+    const gameNote = {
+      ...createDefaultGameNoteData(game.id),
+      uiTemplate: normalizeUITemplate(uiTemplate),
+    };
 
     setAppData((previousData) => ({
       ...previousData,
       customGames: [...previousData.customGames, game],
       notesByGameId: {
         ...previousData.notesByGameId,
-        [game.id]: createDefaultGameNoteData(game.id),
+        [game.id]: gameNote,
       },
     }));
 
     return game;
   }
 
-  function updateCustomGame(gameId, { title, description }) {
+  function updateCustomGame(gameId, { title, description, uiTemplate }) {
     const timestamp = new Date().toISOString();
+    const normalizedUITemplate = normalizeUITemplate(uiTemplate);
 
     setAppData((previousData) => ({
       ...previousData,
@@ -1504,6 +1420,34 @@ export default function App() {
             }
           : game
       ),
+      notesByGameId: {
+        ...previousData.notesByGameId,
+        [gameId]: normalizeGameNoteData(
+          {
+            ...(previousData.notesByGameId[gameId] || createDefaultGameNoteData(gameId)),
+            uiTemplate: normalizedUITemplate,
+          },
+          gameId
+        ),
+      },
+    }));
+  }
+
+  function updateGameTemplate(gameId, uiTemplate) {
+    const normalizedUITemplate = normalizeUITemplate(uiTemplate);
+
+    setAppData((previousData) => ({
+      ...previousData,
+      notesByGameId: {
+        ...previousData.notesByGameId,
+        [gameId]: normalizeGameNoteData(
+          {
+            ...(previousData.notesByGameId[gameId] || createDefaultGameNoteData(gameId)),
+            uiTemplate: normalizedUITemplate,
+          },
+          gameId
+        ),
+      },
     }));
   }
 
@@ -1589,6 +1533,7 @@ export default function App() {
           onCreateGame={createCustomGame}
           onDeleteGame={deleteCustomGame}
           onUpdateGame={updateCustomGame}
+          onUpdateGameTemplate={updateGameTemplate}
           onLogout={logout}
           onSaveToOhmesh={saveToOhmesh}
           onSelectGame={(game) => navigateTo(game.path)}
@@ -1647,6 +1592,7 @@ function HomePage({
   onCreateGame,
   onDeleteGame,
   onUpdateGame,
+  onUpdateGameTemplate,
   onLogout,
   onSaveToOhmesh,
   onSelectGame,
@@ -1670,8 +1616,10 @@ function HomePage({
   }
 
   function saveGame(gameDraft) {
-    if (editingGame) {
+    if (editingGame?.isCustom) {
       onUpdateGame(editingGame.id, gameDraft);
+    } else if (editingGame) {
+      onUpdateGameTemplate(editingGame.id, gameDraft.uiTemplate);
     } else {
       onCreateGame(gameDraft);
     }
@@ -1728,16 +1676,22 @@ function HomePage({
               <span className="game-description">{game.description}</span>
               <span className="game-action">공부 시작</span>
             </a>
-            {game.isCustom ? (
-              <div className="game-card-tools">
+            <div className="game-card-tools">
+              {game.isCustom ? (
+                <>
+                  <button className="button small secondary" type="button" onClick={() => openEditGame(game)}>
+                    수정
+                  </button>
+                  <button className="button small danger" type="button" onClick={() => deleteGame(game)}>
+                    삭제
+                  </button>
+                </>
+              ) : (
                 <button className="button small secondary" type="button" onClick={() => openEditGame(game)}>
-                  수정
+                  설정
                 </button>
-                <button className="button small danger" type="button" onClick={() => deleteGame(game)}>
-                  삭제
-                </button>
-              </div>
-            ) : null}
+              )}
+            </div>
           </article>
         ))}
       </section>
@@ -1752,7 +1706,9 @@ function HomePage({
 function GameEditorModal({ game, onClose, onSaveGame }) {
   const [title, setTitle] = useState(game?.title || "");
   const [description, setDescription] = useState(game?.description || "");
+  const [uiTemplate, setUITemplate] = useState(normalizeUITemplate(game?.uiTemplate));
   const isEditing = Boolean(game);
+  const isBuiltInGame = Boolean(game && !game.isCustom);
 
   useEffect(() => {
     function closeWithEscape(event) {
@@ -1766,12 +1722,13 @@ function GameEditorModal({ game, onClose, onSaveGame }) {
   function saveGame(event) {
     event.preventDefault();
 
-    const trimmedTitle = title.trim();
+    const trimmedTitle = isBuiltInGame ? game.title : title.trim();
     if (!trimmedTitle) return;
 
     onSaveGame({
       title: trimmedTitle,
       description: description.trim(),
+      uiTemplate,
     });
   }
 
@@ -1788,25 +1745,45 @@ function GameEditorModal({ game, onClose, onSaveGame }) {
           <div className="modal-header">
             <div>
               <p className="eyebrow">게임 관리</p>
-              <h2 id="game-editor-title">{isEditing ? "게임 수정" : "게임 추가"}</h2>
+              <h2 id="game-editor-title">{isBuiltInGame ? "게임 설정" : isEditing ? "게임 수정" : "게임 추가"}</h2>
             </div>
             <button className="button small secondary" type="button" onClick={onClose}>
               닫기
             </button>
           </div>
 
-          <label className="field">
-            <span>제목</span>
-            <input value={title} onChange={(event) => setTitle(event.target.value)} required />
-          </label>
+          {isBuiltInGame ? (
+            <div className="locked-game-summary">
+              <span>게임</span>
+              <strong>{game.title}</strong>
+            </div>
+          ) : (
+            <>
+              <label className="field">
+                <span>제목</span>
+                <input value={title} onChange={(event) => setTitle(event.target.value)} required />
+              </label>
+
+              <label className="field">
+                <span>설명</span>
+                <textarea
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  rows="3"
+                />
+              </label>
+            </>
+          )}
 
           <label className="field">
-            <span>설명</span>
-            <textarea
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              rows="3"
-            />
+            <span>화면 템플릿</span>
+            <select value={uiTemplate} onChange={(event) => setUITemplate(normalizeUITemplate(event.target.value))}>
+              {uiTemplateOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </label>
 
           <div className="button-row">
@@ -1814,7 +1791,7 @@ function GameEditorModal({ game, onClose, onSaveGame }) {
               취소
             </button>
             <button className="button primary" type="submit">
-              {isEditing ? "수정 저장" : "게임 추가"}
+              {isBuiltInGame ? "설정 저장" : isEditing ? "수정 저장" : "게임 추가"}
             </button>
           </div>
         </form>
@@ -1878,9 +1855,6 @@ function StudyGamePage({
 }) {
   const [editingSentenceId, setEditingSentenceId] = useState(null);
   const [sentenceForm, setSentenceForm] = useState(createEmptySentenceForm());
-  const [editingTemplateId, setEditingTemplateId] = useState(null);
-  const [templateForm, setTemplateForm] = useState(createEmptyTemplateForm());
-  const [templateSearch, setTemplateSearch] = useState("");
   const [editingCharacterId, setEditingCharacterId] = useState(null);
   const [characterForm, setCharacterForm] = useState(createEmptyCharacterForm());
   const [isGuideOpen, setIsGuideOpen] = useState(false);
@@ -1960,88 +1934,6 @@ function StudyGamePage({
   function resetSentenceForm() {
     setSentenceForm(createEmptySentenceForm());
     setEditingSentenceId(null);
-  }
-
-  function updateTemplateForm(field, value) {
-    setTemplateForm((previousForm) => ({
-      ...previousForm,
-      [field]: value,
-    }));
-  }
-
-  function resetTemplateForm() {
-    setTemplateForm(createEmptyTemplateForm());
-    setEditingTemplateId(null);
-  }
-
-  function saveTemplate(event) {
-    event.preventDefault();
-
-    const title = templateForm.title.trim();
-    const body = templateForm.body.trim();
-    if (!title || !body) return;
-
-    const tags = normalizeTags(templateForm.tags);
-    const timestamp = new Date().toISOString();
-
-    if (editingTemplateId) {
-      setData((previousData) => ({
-        ...previousData,
-        templates: (previousData.templates || []).map((template) =>
-          template.id === editingTemplateId
-            ? {
-                ...template,
-                title,
-                body,
-                tags,
-                updatedAt: timestamp,
-              }
-            : template
-        ),
-      }));
-    } else {
-      const newTemplate = {
-        id: createTemplateId(),
-        title,
-        body,
-        tags,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-      };
-
-      setData((previousData) => ({
-        ...previousData,
-        templates: [newTemplate, ...(previousData.templates || [])],
-        selectedTemplateId: previousData.selectedTemplateId || newTemplate.id,
-      }));
-    }
-
-    resetTemplateForm();
-  }
-
-  function editTemplate(template) {
-    setEditingTemplateId(template.id);
-    setTemplateForm({
-      title: template.title,
-      body: template.body,
-      tags: formatTags(template.tags),
-    });
-  }
-
-  function deleteTemplate(templateId) {
-    setData((previousData) => ({
-      ...previousData,
-      templates: (previousData.templates || []).filter((template) => template.id !== templateId),
-      selectedTemplateId: previousData.selectedTemplateId === templateId ? "" : previousData.selectedTemplateId,
-    }));
-    if (templateId === editingTemplateId) resetTemplateForm();
-  }
-
-  function selectTemplate(templateId) {
-    setData((previousData) => ({
-      ...previousData,
-      selectedTemplateId: normalizeSelectedTemplateId(templateId, previousData.templates || []),
-    }));
   }
 
   function updateCharacterForm(field, value) {
@@ -2277,22 +2169,9 @@ function StudyGamePage({
             </div>
 
             <div className="right-column">
-              <TemplatePanel
-                templates={data.templates}
-                selectedTemplateId={data.selectedTemplateId}
-                form={templateForm}
-                search={templateSearch}
-                editingTemplateId={editingTemplateId}
-                onCancelEdit={resetTemplateForm}
-                onDeleteTemplate={deleteTemplate}
-                onEditTemplate={editTemplate}
-                onSaveTemplate={saveTemplate}
-                onSearchChange={setTemplateSearch}
-                onSelectTemplate={selectTemplate}
-                onUpdateForm={updateTemplateForm}
-              />
               <SentenceList
                 sentences={data.sentences}
+                uiTemplate={data.uiTemplate}
                 onDeleteSentence={deleteSentence}
                 onEditSentence={editSentence}
                 onSpeakEnglish={speakEnglish}
@@ -2573,166 +2452,6 @@ function MissionPanel({ missionChecks, onToggleMission }) {
   );
 }
 
-function TemplatePanel({
-  templates,
-  selectedTemplateId,
-  form,
-  search,
-  editingTemplateId,
-  onCancelEdit,
-  onDeleteTemplate,
-  onEditTemplate,
-  onSaveTemplate,
-  onSearchChange,
-  onSelectTemplate,
-  onUpdateForm,
-}) {
-  const safeTemplates = Array.isArray(templates) ? templates : [];
-  const selectedTemplate = safeTemplates.find((template) => template.id === selectedTemplateId) || null;
-  const normalizedSearch = search.trim().toLowerCase();
-  const visibleTemplates = normalizedSearch
-    ? safeTemplates.filter((template) => {
-        const searchableText = [template.title, template.body, ...(template.tags || [])].join(" ").toLowerCase();
-        return searchableText.includes(normalizedSearch);
-      })
-    : safeTemplates;
-
-  return (
-    <section className="panel template-panel">
-      <div className="panel-heading">
-        <div>
-          <h2>게임 템플릿</h2>
-          <p>게임마다 다른 자유 형식 템플릿을 저장하고 선택합니다.</p>
-        </div>
-        <span className="small-badge">{safeTemplates.length}개</span>
-      </div>
-
-      {selectedTemplate ? (
-        <article className="selected-template">
-          <div className="selected-template-heading">
-            <div>
-              <span className="card-label">선택된 템플릿</span>
-              <h3>{selectedTemplate.title}</h3>
-            </div>
-            <button className="button small secondary" type="button" onClick={() => onEditTemplate(selectedTemplate)}>
-              수정
-            </button>
-          </div>
-          {(selectedTemplate.tags || []).length > 0 ? (
-            <div className="tag-list" aria-label="선택된 템플릿 태그">
-              {(selectedTemplate.tags || []).map((tag) => (
-                <span key={tag} className="tag-pill">
-                  {tag}
-                </span>
-              ))}
-            </div>
-          ) : null}
-          <p className="template-body">{selectedTemplate.body}</p>
-        </article>
-      ) : safeTemplates.length > 0 ? (
-        <p className="empty-message">사용할 템플릿을 선택하세요.</p>
-      ) : null}
-
-      <form className="template-form" onSubmit={onSaveTemplate}>
-        <label className="field">
-          <span>템플릿 이름</span>
-          <input
-            value={form.title}
-            onChange={(event) => onUpdateForm("title", event.target.value)}
-            placeholder="감정 표현, 퀘스트 대화, 인물 분석"
-            required
-          />
-        </label>
-
-        <label className="field">
-          <span>태그</span>
-          <input
-            value={form.tags}
-            onChange={(event) => onUpdateForm("tags", event.target.value)}
-            placeholder="emotion, dialog"
-          />
-        </label>
-
-        <label className="field full-width">
-          <span>템플릿 내용</span>
-          <textarea
-            value={form.body}
-            onChange={(event) => onUpdateForm("body", event.target.value)}
-            placeholder={"게임마다 필요한 형식 그대로 적습니다.\n예: 상황, 원문, 내 해석, 바꿔 쓸 문장, 확인할 인물 관계"}
-            rows="6"
-            required
-          />
-        </label>
-
-        <div className="button-row">
-          {editingTemplateId ? (
-            <button className="button secondary" type="button" onClick={onCancelEdit}>
-              취소
-            </button>
-          ) : null}
-          <button className="button primary" type="submit">
-            {editingTemplateId ? "수정 저장" : "카드 추가"}
-          </button>
-        </div>
-      </form>
-
-      <label className="field template-search">
-        <span>검색</span>
-        <input
-          value={search}
-          onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="제목, 본문, 태그로 찾기"
-        />
-      </label>
-
-      <div className="template-card-list">
-        {safeTemplates.length === 0 ? (
-          <p className="empty-message">아직 저장한 템플릿 카드가 없습니다.</p>
-        ) : visibleTemplates.length === 0 ? (
-          <p className="empty-message">검색 결과가 없습니다.</p>
-        ) : (
-          visibleTemplates.map((template) => (
-            <article
-              key={template.id}
-              className={`template-card ${template.id === selectedTemplateId ? "selected" : ""}`}
-            >
-              <div className="template-card-heading">
-                <h3>{template.title}</h3>
-                <div className="template-card-tools">
-                  <button
-                    className="button small primary"
-                    type="button"
-                    onClick={() => onSelectTemplate(template.id)}
-                    disabled={template.id === selectedTemplateId}
-                  >
-                    {template.id === selectedTemplateId ? "선택됨" : "선택"}
-                  </button>
-                  <button className="button small secondary" type="button" onClick={() => onEditTemplate(template)}>
-                    수정
-                  </button>
-                  <button className="button small danger" type="button" onClick={() => onDeleteTemplate(template.id)}>
-                    삭제
-                  </button>
-                </div>
-              </div>
-              {(template.tags || []).length > 0 ? (
-                <div className="tag-list" aria-label="템플릿 태그">
-                  {(template.tags || []).map((tag) => (
-                    <span key={tag} className="tag-pill">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-              <p className="template-body">{template.body}</p>
-            </article>
-          ))
-        )}
-      </div>
-    </section>
-  );
-}
-
 function CharacterPanel({
   characters,
   form,
@@ -2872,11 +2591,65 @@ function SentenceForm({ form, editingSentenceId, onCancelEdit, onSaveSentence, o
 
 function SentenceList({
   sentences,
+  uiTemplate,
   onDeleteSentence,
   onEditSentence,
   onSpeakEnglish,
   onTogglePracticed,
 }) {
+  const [selectedSentenceId, setSelectedSentenceId] = useState(null);
+  const selectedSentence = sentences.find((sentence) => sentence.id === selectedSentenceId) || null;
+
+  function closeSentenceModal() {
+    setSelectedSentenceId(null);
+  }
+
+  function editSentenceFromModal(sentence) {
+    closeSentenceModal();
+    onEditSentence(sentence);
+  }
+
+  function deleteSentenceFromModal(sentenceId) {
+    closeSentenceModal();
+    onDeleteSentence(sentenceId);
+  }
+
+  if (uiTemplate === CARD_POPUP_UI_TEMPLATE) {
+    return (
+      <section className="panel">
+        <div className="panel-heading">
+          <div>
+            <h2>영어 문장 카드</h2>
+            <p>카드를 누르면 저장한 문장을 크게 봅니다.</p>
+          </div>
+        </div>
+
+        {sentences.length === 0 ? (
+          <p className="empty-message">아직 저장한 문장이 없습니다.</p>
+        ) : (
+          <div className="sentence-card-grid">
+            {sentences.map((sentence) => (
+              <SentencePreviewCard
+                key={sentence.id}
+                sentence={sentence}
+                onOpenSentence={() => setSelectedSentenceId(sentence.id)}
+              />
+            ))}
+          </div>
+        )}
+
+        <SentenceDetailModal
+          sentence={selectedSentence}
+          onClose={closeSentenceModal}
+          onDeleteSentence={deleteSentenceFromModal}
+          onEditSentence={editSentenceFromModal}
+          onSpeakEnglish={onSpeakEnglish}
+          onTogglePracticed={onTogglePracticed}
+        />
+      </section>
+    );
+  }
+
   return (
     <section className="panel">
       <div className="panel-heading">
@@ -2902,6 +2675,113 @@ function SentenceList({
         )}
       </div>
     </section>
+  );
+}
+
+function SentencePreviewCard({ sentence, onOpenSentence }) {
+  const meaning = sentence.meaning.trim();
+  const previewMeaning = meaning.length > 82 ? `${meaning.slice(0, 82)}...` : meaning;
+
+  return (
+    <button
+      className={`sentence-preview-card ${sentence.practiced ? "done" : ""}`}
+      type="button"
+      onClick={onOpenSentence}
+    >
+      <span className="sentence-preview-status">{sentence.practiced ? "연습 완료" : "연습 전"}</span>
+      <strong>{sentence.original}</strong>
+      {previewMeaning ? <span>{previewMeaning}</span> : <span className="empty-preview">뜻을 아직 적지 않았습니다.</span>}
+    </button>
+  );
+}
+
+function SentenceDetailModal({
+  sentence,
+  onClose,
+  onDeleteSentence,
+  onEditSentence,
+  onSpeakEnglish,
+  onTogglePracticed,
+}) {
+  useEffect(() => {
+    if (!sentence) return undefined;
+
+    function closeWithEscape(event) {
+      if (event.key === "Escape") onClose();
+    }
+
+    window.addEventListener("keydown", closeWithEscape);
+    return () => window.removeEventListener("keydown", closeWithEscape);
+  }, [sentence, onClose]);
+
+  if (!sentence) return null;
+
+  const mySentence = sentence.mySentence.trim();
+
+  return (
+    <div className="modal-backdrop" role="presentation" onClick={onClose}>
+      <section
+        className="modal-card sentence-detail-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sentence-detail-title"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="modal-header">
+          <div>
+            <p className="eyebrow">저장 문장</p>
+            <h2 id="sentence-detail-title">{sentence.original}</h2>
+          </div>
+          <button className="button small secondary" type="button" onClick={onClose}>
+            닫기
+          </button>
+        </div>
+
+        <div className="sentence-detail-content">
+          {sentence.meaning ? (
+            <section className="modal-section">
+              <h3>뜻</h3>
+              <p>{sentence.meaning}</p>
+            </section>
+          ) : null}
+
+          {mySentence ? (
+            <section className="modal-section">
+              <h3>내 문장</h3>
+              <p>{mySentence}</p>
+            </section>
+          ) : null}
+
+          <label className="practice-check sentence-detail-practice">
+            <input
+              className="toggle-input"
+              type="checkbox"
+              checked={sentence.practiced}
+              onChange={() => onTogglePracticed(sentence.id)}
+            />
+            <span className="toggle-track" aria-hidden="true" />
+            <span className="toggle-copy">연습 완료</span>
+          </label>
+        </div>
+
+        <div className="sentence-detail-actions">
+          <button className="button secondary" type="button" onClick={() => onSpeakEnglish(sentence.original)}>
+            원문 듣기
+          </button>
+          {mySentence ? (
+            <button className="button secondary" type="button" onClick={() => onSpeakEnglish(mySentence)}>
+              내 문장 듣기
+            </button>
+          ) : null}
+          <button className="button secondary" type="button" onClick={() => onEditSentence(sentence)}>
+            수정
+          </button>
+          <button className="button danger" type="button" onClick={() => onDeleteSentence(sentence.id)}>
+            삭제
+          </button>
+        </div>
+      </section>
+    </div>
   );
 }
 
