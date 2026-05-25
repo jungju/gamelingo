@@ -697,7 +697,7 @@ function VocabularyEditorModal({ vocabulary, onClose, onSaveVocabulary }) {
 
   return (
     <ModalPresence
-      overlayClassName="fixed inset-0 z-50 grid place-items-center bg-black/65 p-6 backdrop-blur-sm"
+      overlayClassName="vocabulary-modal-shell fixed inset-0 grid place-items-center bg-black/65 p-6 backdrop-blur-sm"
       panelClassName="w-full max-w-2xl rounded-[2rem] border border-stone-700 bg-stone-950 p-5 text-stone-100 shadow-2xl"
     >
       <div className="mb-5 flex items-start justify-between gap-4">
