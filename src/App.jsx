@@ -43,13 +43,13 @@ export default function App() {
     user: null,
     app: null,
     session: null,
-    message: "로그인 상태를 확인하는 중입니다.",
+    message: "Checking sign-in status.",
   });
   const [appData, setAppData] = useState(loadGuestAppData);
   const [storageRecord, setStorageRecord] = useState(null);
   const [syncState, setSyncState] = useState({
     status: "local",
-    message: "로그인 전에는 이 브라우저에만 저장됩니다.",
+    message: "Saved in this browser until you sign in.",
   });
   const [isRemoteDataReady, setIsRemoteDataReady] = useState(false);
   const [storageReloadKey, setStorageReloadKey] = useState(0);
@@ -70,11 +70,11 @@ export default function App() {
           user: null,
           app: null,
           session: null,
-          message: "로그인이 필요합니다. 다시 로그인해주세요.",
+          message: "Please sign in again.",
         });
         setSyncState({
           status: "local",
-          message: "로그인 전에는 이 브라우저에만 저장됩니다.",
+          message: "Saved in this browser until you sign in.",
         });
         return true;
       }
@@ -86,7 +86,7 @@ export default function App() {
           user: null,
           app: null,
           session: null,
-          message: "현재 세션이 gamelingo 앱용이 아닙니다.",
+          message: "This session does not belong to Gamelingo.",
         });
         return true;
       }
@@ -107,17 +107,17 @@ export default function App() {
           user: null,
           app: null,
           session: null,
-          message: "로그인하면 문장 노트를 안전하게 저장할 수 있습니다.",
+          message: "Sign in to save your study notes with ohmesh.",
         });
         setSyncState({
           status: "local",
-          message: "로그인 전에는 이 브라우저에만 저장됩니다.",
+          message: "Saved in this browser until you sign in.",
         });
         return;
       }
 
       if (!response.ok) {
-        throw new Error(await getResponseErrorMessage(response, "로그인 상태를 확인하지 못했습니다."));
+        throw new Error(await getResponseErrorMessage(response, "Could not check sign-in status."));
       }
 
       const sessionInfo = await readResponseJson(response);
@@ -129,7 +129,7 @@ export default function App() {
           user: sessionInfo.user || null,
           app: sessionInfo.app || null,
           session: sessionInfo.session || null,
-          message: "현재 세션이 gamelingo 앱용이 아닙니다.",
+          message: "This session does not belong to Gamelingo.",
         });
         return;
       }
@@ -145,14 +145,14 @@ export default function App() {
       clearRemoteData();
       setSyncState({
         status: "local",
-        message: "ohmesh 확인에 실패해 이 브라우저에만 저장됩니다.",
+        message: "Could not reach ohmesh, so notes are saved in this browser.",
       });
       setAuthState({
         status: "error",
         user: null,
         app: null,
         session: null,
-        message: error instanceof Error ? error.message : "로그인 상태를 확인하지 못했습니다.",
+        message: error instanceof Error ? error.message : "Could not check sign-in status.",
       });
     }
   }, [clearRemoteData]);
@@ -161,7 +161,7 @@ export default function App() {
     setAuthState((previousState) => ({
       ...previousState,
       status: "checking",
-      message: "로그인 상태를 확인하는 중입니다.",
+      message: "Checking sign-in status.",
     }));
     loadAuthState();
   }, [loadAuthState]);
@@ -207,7 +207,7 @@ export default function App() {
 
       setStorageRecord(null);
       setIsRemoteDataReady(false);
-      setSyncState({ status: "loading", message: "ohmesh에서 노트를 불러오는 중입니다." });
+      setSyncState({ status: "loading", message: "Loading notes from ohmesh." });
       lastSavedDataJsonRef.current = "";
 
       try {
@@ -219,7 +219,7 @@ export default function App() {
           if (shouldIgnore || handleSessionProblem(listResponse)) return undefined;
 
           if (!listResponse.ok) {
-            throw new Error(await getResponseErrorMessage(listResponse, "노트를 불러오지 못했습니다."));
+            throw new Error(await getResponseErrorMessage(listResponse, "Could not load notes."));
           }
 
           const recordList = await readResponseJson(listResponse);
@@ -232,7 +232,7 @@ export default function App() {
           if (shouldIgnore || handleSessionProblem(recordResponse)) return undefined;
 
           if (!recordResponse.ok) {
-            throw new Error(await getResponseErrorMessage(recordResponse, "노트를 읽지 못했습니다."));
+            throw new Error(await getResponseErrorMessage(recordResponse, "Could not read notes."));
           }
 
           return readResponseJson(recordResponse);
@@ -275,7 +275,7 @@ export default function App() {
           if (shouldIgnore || handleSessionProblem(createResponse)) return;
 
           if (!createResponse.ok) {
-            throw new Error(await getResponseErrorMessage(createResponse, "노트를 만들지 못했습니다."));
+            throw new Error(await getResponseErrorMessage(createResponse, "Could not create notes."));
           }
 
           activeRecord = await readResponseJson(createResponse);
@@ -289,7 +289,7 @@ export default function App() {
           if (shouldIgnore || handleSessionProblem(compactResponse)) return;
 
           if (!compactResponse.ok) {
-            throw new Error(await getResponseErrorMessage(compactResponse, "노트를 압축 저장하지 못했습니다."));
+            throw new Error(await getResponseErrorMessage(compactResponse, "Could not compact and save notes."));
           }
 
           activeRecord = await readResponseJson(compactResponse);
@@ -309,7 +309,7 @@ export default function App() {
         setIsRemoteDataReady(true);
         setSyncState({
           status: "saved",
-          message: shouldUploadGuestData ? "브라우저 노트를 ohmesh에 저장했습니다." : "ohmesh에 저장되어 있습니다.",
+          message: shouldUploadGuestData ? "Saved browser notes to ohmesh." : "Saved to ohmesh.",
         });
       } catch (error) {
         if (shouldIgnore) return;
@@ -317,7 +317,7 @@ export default function App() {
         setIsRemoteDataReady(false);
         setSyncState({
           status: "error",
-          message: error instanceof Error ? error.message : "노트를 불러오지 못했습니다.",
+          message: error instanceof Error ? error.message : "Could not load notes.",
         });
       }
     }
@@ -343,7 +343,7 @@ export default function App() {
 
     const abortController = new AbortController();
     const saveTimer = window.setTimeout(async () => {
-      setSyncState({ status: "saving", message: "ohmesh에 저장하는 중입니다." });
+      setSyncState({ status: "saving", message: "Saving to ohmesh." });
 
       try {
         const response = await ohmeshFetch(`/api/apps/${OHMESH_APP_SLUG}/records/${storageRecord.id}`, {
@@ -356,20 +356,20 @@ export default function App() {
         if (handleSessionProblem(response)) return;
 
         if (!response.ok) {
-          throw new Error(await getResponseErrorMessage(response, "노트를 저장하지 못했습니다."));
+          throw new Error(await getResponseErrorMessage(response, "Could not save notes."));
         }
 
         const updatedRecord = await readResponseJson(response);
         lastSavedDataJsonRef.current = nextDataJson;
         setStorageRecord(updatedRecord);
         saveGuestAppData(appData);
-        setSyncState({ status: "saved", message: "ohmesh에 저장되어 있습니다." });
+        setSyncState({ status: "saved", message: "Saved to ohmesh." });
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return;
 
         setSyncState({
           status: "error",
-          message: error instanceof Error ? error.message : "노트를 저장하지 못했습니다.",
+          message: error instanceof Error ? error.message : "Could not save notes.",
         });
       }
     }, 650);
@@ -488,17 +488,17 @@ export default function App() {
   }
 
   if (authState.status === "checking") {
-    return <AuthStatePage title="로그인 확인 중" description={authState.message} />;
+    return <AuthStatePage title="Checking Sign-In" description={authState.message} />;
   }
 
   if (authState.status === "wrong-app") {
     return (
       <AuthStatePage
-        title="앱 세션 확인 필요"
+        title="App Session Check Needed"
         description={authState.message}
-        primaryAction="로그아웃"
+        primaryAction="Log out"
         onPrimaryAction={logout}
-        secondaryAction="다시 확인"
+        secondaryAction="Check again"
         onSecondaryAction={checkAuth}
       />
     );
@@ -507,11 +507,11 @@ export default function App() {
   if (authState.status === "signed-in" && !isRemoteDataReady) {
     return (
       <AuthStatePage
-        title={syncState.status === "error" ? "노트를 불러오지 못했습니다" : "노트를 불러오는 중"}
-        description={syncState.message || "ohmesh에서 내 문장 노트를 준비하고 있습니다."}
-        primaryAction={syncState.status === "error" ? "다시 시도" : undefined}
+        title={syncState.status === "error" ? "Could Not Load Notes" : "Loading Notes"}
+        description={syncState.message || "Preparing your study notes from ohmesh."}
+        primaryAction={syncState.status === "error" ? "Try again" : undefined}
         onPrimaryAction={syncState.status === "error" ? retryStorageLoad : undefined}
-        secondaryAction="로그아웃"
+        secondaryAction="Log out"
         onSecondaryAction={logout}
       />
     );

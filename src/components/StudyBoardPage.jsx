@@ -194,7 +194,7 @@ export function StudyBoardPage({
       />
       {syncState.status === "error" ? (
         <div className="border-b border-red-950/70 bg-red-950/40 px-6 py-3 text-sm font-bold text-red-200">
-          {syncState.message || "ohmesh 저장에 실패했습니다. 다시 수정하면 저장을 재시도합니다."}
+          {syncState.message || "ohmesh save failed. Edit again to retry."}
         </div>
       ) : null}
       <Board
@@ -255,7 +255,7 @@ function StudyHeader({
         <button
           onClick={onBackToGames}
           className="back-button"
-          title="게임 선택으로 이동"
+          title="Back to game library"
           type="button"
         >
           <ArrowLeft className="h-5 w-5" />
@@ -265,19 +265,19 @@ function StudyHeader({
       <div className="header-right">
         <div className="search-box">
           <Search className="h-4 w-4" />
-          <span>문장 / 영단어 / 등장인물 검색</span>
+          <span>Search notes / vocabulary / characters</span>
         </div>
         <SyncStatusBadge syncState={syncState} />
         <button onClick={onAddNote} className="primary-button" type="button">
-          <Plus className="h-4 w-4" />노트 추가
+          <Plus className="h-4 w-4" />Add note
         </button>
         <button
           className={isGuestMode ? "primary-button primary-button--warm" : "small-button"}
           type="button"
           onClick={isGuestMode ? onSaveToOhmesh : onLogout}
-          title={isGuestMode ? "ohmesh 로그인" : getUserDisplayName(user)}
+          title={isGuestMode ? "Sign in with ohmesh" : getUserDisplayName(user)}
         >
-          {isGuestMode ? "로그인" : "로그아웃"}
+          {isGuestMode ? "Log in" : "Log out"}
         </button>
       </div>
     </header>
@@ -315,8 +315,8 @@ function Board({
       {sentences.length === 0 ? (
         <div className="note-list">
           <div className="empty-board-note">
-            <p>아직 보드 노트가 없습니다.</p>
-            <span>상단의 노트 추가를 눌러 게임에서 발견한 영어 문장을 붙여보세요.</span>
+            <p>No board notes yet.</p>
+            <span>Add any line you found in the game.</span>
           </div>
         </div>
       ) : (
@@ -355,7 +355,7 @@ function Board({
             <CharacterCard key={character.id} character={character} onOpen={onOpenCharacter} />
           ))}
           <button onClick={onAddCharacter} className="add-character-button" type="button">
-            <Plus className="h-3.5 w-3.5" />등장인물 추가
+            <Plus className="h-3.5 w-3.5" />Add character
           </button>
         </div>
       </div>
@@ -391,7 +391,7 @@ function NoteCard({
         onDragEnd={onDragEnd}
         onDragStart={onDragStart}
         className="drag-handle"
-        title="노트 순서 변경"
+        title="Move note"
         type="button"
       >
         <GripVertical className="h-4 w-4" />
@@ -409,6 +409,10 @@ function NoteCard({
   );
 }
 
+function formatItemCount(count) {
+  return count === 1 ? "1 item" : `${count} items`;
+}
+
 function WordBoardNote({ vocabulary, onEditVocabulary }) {
   return (
     <motion.section
@@ -420,14 +424,14 @@ function WordBoardNote({ vocabulary, onEditVocabulary }) {
       <div className="word-panel-header">
         <div className="word-title-wrap">
           <Pin className="h-4 w-4 text-stone-500" />
-          <h3 className="word-title">영단어</h3>
-          <span className="count-badge">{vocabulary.length}개</span>
+          <h3 className="word-title">Vocabulary</h3>
+          <span className="count-badge">{formatItemCount(vocabulary.length)}</span>
         </div>
         <button
           onClick={onEditVocabulary}
           className="small-button"
-          title="영단어 수정"
-          aria-label="영단어 수정"
+          title="Edit vocabulary"
+          aria-label="Edit vocabulary"
           type="button"
         >
           <PencilLine className="h-3.5 w-3.5" />
@@ -436,7 +440,7 @@ function WordBoardNote({ vocabulary, onEditVocabulary }) {
 
       <div className="word-list">
         {vocabulary.length === 0 ? (
-          <p className="empty-word-list">저장한 단어가 없습니다.</p>
+          <p className="empty-word-list">No saved vocabulary yet.</p>
         ) : (
           vocabulary.map((entry) => (
             <button
@@ -446,8 +450,8 @@ function WordBoardNote({ vocabulary, onEditVocabulary }) {
               type="button"
             >
               <div className="word-row">
-                <span className="word-en">{entry.word}</span>
-                <span className="word-ko">{entry.meaning}</span>
+                <span className="word-term">{entry.word}</span>
+                <span className="word-meaning">{entry.meaning}</span>
               </div>
             </button>
           ))
@@ -473,7 +477,7 @@ function CharacterCard({ character, onOpen }) {
         </div>
         <div className="character-info">
           <p className="character-name">{character.name}</p>
-          <p className="character-role">{character.description || "인물 메모"}</p>
+          <p className="character-role">{character.description || "Character note"}</p>
         </div>
       </div>
     </motion.button>
@@ -482,7 +486,7 @@ function CharacterCard({ character, onOpen }) {
 
 function SentenceBoardModal({ sentence, onClose, onDeleteSentence, onSaveSentence }) {
   const [draft, setDraft] = useState(createSentenceDraft(sentence));
-  const [showKorean, setShowKorean] = useState(true);
+  const [showTranslation, setShowTranslation] = useState(true);
   const isEdit = Boolean(sentence);
 
   function updateDraft(field, value) {
@@ -507,40 +511,40 @@ function SentenceBoardModal({ sentence, onClose, onDeleteSentence, onSaveSentenc
     <ModalPresence overlayClassName="overlay" panelClassName="modal" panelMotion={LARGE_PANEL_MOTION}>
       <div className="modal-header">
         <div className="modal-title">
-          <BookOpen className="h-5 w-5 text-amber-200/70" />노트
+          <BookOpen className="h-5 w-5 text-amber-200/70" />Note
         </div>
         <div className="modal-actions">
-          <button className="toggle-button" type="button" onClick={() => setShowKorean((previous) => !previous)}>
-            <span>{showKorean ? "◑" : "◐"}</span>
-            <span>{showKorean ? "한글 / 해석 숨기기" : "한글 / 해석 보기"}</span>
+          <button className="toggle-button" type="button" onClick={() => setShowTranslation((previous) => !previous)}>
+            <span>{showTranslation ? "◑" : "◐"}</span>
+            <span>{showTranslation ? "Hide translation" : "Show translation"}</span>
           </button>
           <CloseButton onClose={onClose} />
         </div>
       </div>
 
-      <div className={showKorean ? "note-editor" : "note-editor only-english"}>
+      <div className={showTranslation ? "note-editor" : "note-editor target-only"}>
         <section className="editor-section">
           <div className="field-label">
-            <StickyNote className="h-4 w-4" />English
+            <StickyNote className="h-4 w-4" />Target Text
           </div>
           <textarea
             value={draft.original}
             onChange={(event) => updateDraft("original", event.target.value)}
-            className="editor-textarea english-textarea"
-            placeholder="게임에서 발견한 영어 문장을 적습니다."
+            className="editor-textarea target-textarea"
+            placeholder="Write the line you found in the game."
           />
         </section>
 
-        {showKorean ? (
+        {showTranslation ? (
           <section className="editor-section">
             <div className="field-label">
-              <Languages className="h-4 w-4" />한글 / 해석
+              <Languages className="h-4 w-4" />Translation / Notes
             </div>
             <textarea
               value={draft.meaning}
               onChange={(event) => updateDraft("meaning", event.target.value)}
-              className="editor-textarea korean-textarea"
-              placeholder="번역, 해석 설명, 문맥 설명을 적습니다."
+              className="editor-textarea translation-textarea"
+              placeholder="Add a translation, meaning, or context note."
             />
           </section>
         ) : null}
@@ -549,17 +553,17 @@ function SentenceBoardModal({ sentence, onClose, onDeleteSentence, onSaveSentenc
       <div className="modal-footer">
         {isEdit ? (
           <button onClick={() => onDeleteSentence(sentence.id)} className="danger-button" type="button">
-            삭제
+            Delete
           </button>
         ) : (
           <span />
         )}
         <div className="footer-right">
           <button onClick={onClose} className="secondary-button" type="button">
-            취소
+            Cancel
           </button>
           <button onClick={saveDraft} className="save-button" type="button">
-            저장
+            Save
           </button>
         </div>
       </div>
@@ -637,7 +641,7 @@ function CharacterModal({ character, onClose, onDeleteCharacter, onSaveCharacter
               <UserRound className="h-4 w-4" />Character
             </p>
             <h2 className="text-3xl font-black tracking-tight">{character.name}</h2>
-            <p className="mt-1 text-sm text-slate-500">{character.description || "등장인물"}</p>
+            <p className="mt-1 text-sm text-slate-500">{character.description || "Character"}</p>
           </div>
         </div>
         <CloseButton className={SLATE_CLOSE_BUTTON_CLASS} onClose={onClose} />
@@ -646,7 +650,7 @@ function CharacterModal({ character, onClose, onDeleteCharacter, onSaveCharacter
       <div className="grid min-h-0 flex-1 grid-cols-[1fr_320px] overflow-hidden">
         <div className="grid content-start gap-4 overflow-y-auto p-6">
           <label className="grid gap-1.5 rounded-3xl border border-slate-800 bg-slate-900 p-5">
-            <span className="text-xs font-black uppercase tracking-wider text-slate-500">이름</span>
+            <span className="text-xs font-black uppercase tracking-wider text-slate-500">Name</span>
             <input className="rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm font-bold outline-none focus:border-slate-500" value={draft.name} onChange={(event) => updateDraft("name", event.target.value)} />
           </label>
           <label className="grid gap-1.5 rounded-3xl border border-slate-800 bg-slate-900 p-5">
@@ -664,10 +668,10 @@ function CharacterModal({ character, onClose, onDeleteCharacter, onSaveCharacter
           <div className="mb-3 text-xs font-black uppercase tracking-wider text-slate-500">Actions</div>
           <div className="grid grid-cols-2 gap-2">
             <button onClick={saveDraft} className="rounded-2xl border border-slate-800 bg-slate-900 px-3 py-3 text-sm font-bold text-slate-300 hover:bg-slate-800" type="button">
-              저장
+              Save
             </button>
             <button onClick={() => onDeleteCharacter(character.id)} className="rounded-2xl border border-red-950/60 bg-red-950/30 px-3 py-3 text-sm font-bold text-red-300 hover:bg-red-950/50" type="button">
-              삭제
+              Delete
             </button>
           </div>
         </aside>
@@ -701,25 +705,25 @@ function VocabularyEditorModal({ vocabulary, onClose, onSaveVocabulary }) {
           <p className="mb-1 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-stone-500">
             <Languages className="h-4 w-4" />Vocabulary
           </p>
-          <h2 className="text-2xl font-black">영단어 수정</h2>
+          <h2 className="text-2xl font-black">Edit vocabulary</h2>
         </div>
         <CloseButton className={STONE_CLOSE_BUTTON_CLASS} onClose={onClose} />
       </div>
 
       <label className="block">
-        <span className="mb-1 block text-xs font-black text-stone-500">영단어 목록</span>
+        <span className="mb-1 block text-xs font-black text-stone-500">Vocabulary list</span>
         <textarea
           value={text}
           onChange={(event) => setText(event.target.value)}
           className="h-80 w-full resize-none rounded-2xl border border-stone-800 bg-stone-900 px-4 py-3 font-mono text-sm leading-6 text-stone-100 outline-none placeholder:text-stone-600 focus:border-stone-500"
-          placeholder={"alive: 살아 있는\nattic: 다락방\nmemory: 기억"}
+          placeholder={"bonjour: hello\npuerta: door\nmemory: remembrance"}
         />
       </label>
 
       <div className="mt-5 flex justify-end gap-2">
-        <button onClick={onClose} className="rounded-2xl px-4 py-3 text-sm font-black text-stone-500 hover:bg-stone-900" type="button">취소</button>
+        <button onClick={onClose} className="rounded-2xl px-4 py-3 text-sm font-black text-stone-500 hover:bg-stone-900" type="button">Cancel</button>
         <button onClick={saveDraft} className="rounded-2xl bg-stone-100 px-5 py-3 text-sm font-black text-stone-950 hover:bg-white" type="button">
-          저장
+          Save
         </button>
       </div>
     </ModalPresence>
@@ -753,7 +757,7 @@ function AddCharacterModal({ onClose, onSaveCharacter }) {
           <p className="mb-1 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-sky-200/70">
             <UserRound className="h-4 w-4" />Character
           </p>
-          <h2 className="text-2xl font-black">등장인물 추가</h2>
+          <h2 className="text-2xl font-black">Add character</h2>
         </div>
         <CloseButton className={SLATE_CLOSE_BUTTON_CLASS} onClose={onClose} />
       </div>
@@ -767,19 +771,19 @@ function AddCharacterModal({ onClose, onSaveCharacter }) {
 
         <div className="space-y-3">
           <label className="block">
-            <span className="mb-1 block text-xs font-black text-slate-500">이름</span>
+            <span className="mb-1 block text-xs font-black text-slate-500">Name</span>
             <input className="w-full rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm font-bold outline-none focus:border-slate-500" value={draft.name} onChange={(event) => updateDraft("name", event.target.value)} placeholder="Ethan Carter" />
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs font-black text-slate-500">인물 메모</span>
-            <textarea className="h-28 w-full resize-none rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm outline-none focus:border-slate-500" value={draft.description} onChange={(event) => updateDraft("description", event.target.value)} placeholder="스토리에서 어떤 인물인지 적습니다." />
+            <span className="mb-1 block text-xs font-black text-slate-500">Character note</span>
+            <textarea className="h-28 w-full resize-none rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm outline-none focus:border-slate-500" value={draft.description} onChange={(event) => updateDraft("description", event.target.value)} placeholder="Write how this character fits into the story." />
           </label>
         </div>
       </div>
 
       <div className="flex justify-end gap-2 border-t border-slate-800 p-5">
-        <button onClick={onClose} className="rounded-2xl px-4 py-3 text-sm font-black text-slate-500 hover:bg-slate-900" type="button">취소</button>
-        <button onClick={saveDraft} className="rounded-2xl bg-stone-100 px-5 py-3 text-sm font-black text-stone-950 hover:bg-white" type="button">추가</button>
+        <button onClick={onClose} className="rounded-2xl px-4 py-3 text-sm font-black text-slate-500 hover:bg-slate-900" type="button">Cancel</button>
+        <button onClick={saveDraft} className="rounded-2xl bg-stone-100 px-5 py-3 text-sm font-black text-stone-950 hover:bg-white" type="button">Add</button>
       </div>
     </ModalPresence>
   );

@@ -20,19 +20,19 @@ export const defaultGames = [
     id: EDITH_FINCH_ID,
     path: "/games/edith-finch",
     title: "What Remains of Edith Finch",
-    description: "대사를 보드에 모아 내 문장으로 바꾸기",
+    description: "Collect game lines and turn them into your own.",
     artwork: EDITH_FINCH_COVER,
     isCustom: false,
   },
 ];
 
 export const missionItems = [
-  { id: "save-3-sentences", label: "문장 3개 저장하기" },
-  { id: "save-5-words", label: "단어 5개 적기" },
-  { id: "leave-story-note", label: "스토리 메모 한 줄 남기기" },
-  { id: "make-2-my-sentences", label: "내 문장 1개만 만들어보기" },
-  { id: "speak-1-original", label: "원문 1개 소리 내서 따라 말하기" },
-  { id: "practice-1-sentence", label: "연습 완료 1개 체크하기" },
+  { id: "save-3-sentences", label: "Save 3 lines" },
+  { id: "save-5-words", label: "Add 5 vocabulary items" },
+  { id: "leave-story-note", label: "Leave 1 story note" },
+  { id: "make-2-my-sentences", label: "Make 1 line your own" },
+  { id: "speak-1-original", label: "Read 1 original line aloud" },
+  { id: "practice-1-sentence", label: "Mark 1 practice complete" },
 ];
 
 export const sampleSentences = [

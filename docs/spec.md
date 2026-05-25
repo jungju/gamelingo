@@ -27,8 +27,9 @@ When these files disagree, use `README.md` for user-facing behavior and
 
 ## Product Scope
 
-Gamelingo is a React/Vite learning app for collecting useful English sentences
-while playing games and turning them into short personal practice notes.
+Gamelingo is a React/Vite learning app for collecting useful game lines in any
+target language while playing games and turning them into short personal
+practice notes.
 
 The current product includes `What Remains of Edith Finch` as the built-in game
 and lets each user add personal games that share the same study board workflow:
@@ -41,7 +42,8 @@ panel, and a bottom character rail.
 
 - The home page is the game selection page.
 - The built-in Edith Finch game is always present at `/games/edith-finch`.
-- Users can add custom games with required `title` and optional `description`.
+- Users can add custom games with the `Add game` flow, with required `Title`
+  and optional `Description` fields.
 - Custom games use generated internal covers based on the title; no image URL or
   file upload is supported.
 - Custom game title/description edits must preserve the game `id` and route.
@@ -53,30 +55,30 @@ panel, and a bottom character rail.
 - Sentence notes render as compact fixed-size cards in a row-major grid: left to
   right, then the next row from the left.
 - Sentence note cards show the note creation timestamp in compact `M.D HH:mm`
-  form and show the English original text with a two-line clamp.
+  form and show the target-language original text with a two-line clamp.
 - Sentence notes are not freely positioned by `x`/`y` coordinates in the current
   UI.
 - Dragging is only for reordering. Users drag the note handle to move a sentence
   to another place in the grid order.
 - The persisted sentence array order is the displayed board order.
 - Clicking a sentence card opens the note modal. The visible note form stores
-  required English original text and optional Korean/meaning text.
-- The note modal can hide or show the Korean/meaning field and can delete an
+  required `Target Text` and optional `Translation / Notes` text.
+- The note modal can hide or show the translation/notes field and can delete an
   existing sentence.
-- The right `영단어` panel uses an icon-only pencil button for
+- The right `Vocabulary` panel uses an icon-only pencil button for
   whole-vocabulary editing.
 - The vocabulary editor is a multiline text area. Each non-empty line is parsed
-  as `{english}: {translation}`.
+  as `{term}: {meaning}`.
 - Saving vocabulary text replaces the displayed vocabulary with parsed entries
   in line order.
-- Existing vocabulary ids are preserved for matching English words. Deleting a
-  line deletes that vocabulary entry.
+- Existing vocabulary ids are preserved for matching target-language terms.
+  Deleting a line deletes that vocabulary entry.
 - The board vocabulary panel is a narrow, compact one-column list.
 - Sentence cards and the sentence note modal do not show vocabulary tags.
 - The bottom character rail supports character add, edit, and delete. The add
-  button text is `등장인물 추가`.
-- Guest mode shows `로그인`, not browser-save wording.
-- Logged-in mode shows `로그아웃`.
+  button text is `Add character`.
+- Guest mode shows `Log in`, not browser-save wording.
+- Logged-in mode shows `Log out`.
 
 ## Data Contract
 
@@ -95,7 +97,7 @@ panel, and a bottom character rail.
 - Legacy fallback reads `edith-finch-study-state` and
   `gamelingo:v2:edithFinch:guest` as Edith Finch-only notes, then writes future
   saves to the v3 app shape.
-- After a user presses `로그인`, guest data is marked pending before redirecting to
+- After a user presses `Log in`, guest data is marked pending before redirecting to
   ohmesh. On return, pending guest data is uploaded to the current ohmesh record.
 - Signed-in changes are saved to ohmesh with a short debounce.
 

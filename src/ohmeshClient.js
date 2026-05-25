@@ -149,7 +149,7 @@ export async function readResponseJson(response) {
 
 export async function getResponseErrorMessage(response, fallbackMessage) {
   const errorBody = await readResponseJson(response);
-  return errorBody?.error || fallbackMessage || `ohmesh 요청 실패 (${response.status})`;
+  return errorBody?.error || fallbackMessage || `ohmesh request failed (${response.status})`;
 }
 
 export function selectLatestRecord(records) {
@@ -161,14 +161,14 @@ export function selectLatestRecord(records) {
 }
 
 export function getUserDisplayName(user) {
-  return user?.name || user?.email || "로그인됨";
+  return user?.name || user?.email || "Signed in";
 }
 
 export function getSyncStatusLabel(syncState) {
   if (syncState.status === "local") return "";
-  if (syncState.status === "loading") return "불러오는 중";
-  if (syncState.status === "saving") return "저장 중";
-  if (syncState.status === "saved") return "저장됨";
-  if (syncState.status === "error") return "저장 오류";
-  return "대기";
+  if (syncState.status === "loading") return "Loading";
+  if (syncState.status === "saving") return "Saving";
+  if (syncState.status === "saved") return "Saved";
+  if (syncState.status === "error") return "Save error";
+  return "Idle";
 }

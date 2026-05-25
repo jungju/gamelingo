@@ -556,7 +556,7 @@ export function createGameLibrary(customGames) {
     ...customGames.map((game) => ({
       ...game,
       path: `/games/${game.id}`,
-      description: game.description || "내 게임 영어 보드",
+      description: game.description || "My game language board",
       isCustom: true,
     })),
   ];
@@ -597,7 +597,7 @@ export function getSentenceCreatedAtLabel(sentence) {
   const date = new Date(sentence.createdAt || sentence.updatedAt);
 
   if (Number.isNaN(date.getTime())) {
-    return "새 노트";
+    return "New note";
   }
 
   const month = date.getMonth() + 1;
