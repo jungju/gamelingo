@@ -98,9 +98,9 @@ export default function App() {
 
   const loadAuthState = useCallback(async () => {
     try {
-      const response = await ohmeshFetch("/auth/me");
+      const response = await ohmeshFetch(`/auth/me?app=${OHMESH_APP_SLUG}&optional=1`);
 
-      if (response.status === 401) {
+      if (response.status === 401 || response.status === 204) {
         clearRemoteData();
         setAuthState({
           status: "signed-out",

@@ -100,6 +100,9 @@ panel, and a bottom character rail.
 - After a user presses `Log in`, guest data is marked pending before redirecting to
   ohmesh. On return, pending guest data is uploaded to the current ohmesh record.
 - Signed-in changes are saved to ohmesh with a short debounce.
+- Initial guest-mode detection uses the Ohmesh optional session probe so an
+  expected anonymous visit stays in local guest mode without a noisy auth
+  failure in the browser console.
 
 ## Update Rules
 
