@@ -97,6 +97,8 @@ npm run build
 - `main` 브랜치 push 시 `.github/workflows/deploy-pages.yml`이 GitHub Pages에 배포합니다.
 - 수동 재배포가 필요하면 `gh workflow run deploy-pages.yml --ref main`을 실행합니다.
 - 로컬에서 `dist`를 `gh-pages` 브랜치로 직접 publish하지 않습니다.
+- `npm run build`는 GitHub Pages artifact에 `version.json`을 함께 생성해
+  배포된 commit/ref/build time을 노출합니다.
 
 ## 사용 방법
 

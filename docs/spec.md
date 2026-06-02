@@ -38,6 +38,14 @@ ohmesh-backed account storage. The study screen uses the visual direction from
 `prototype/template1.jsx`: a board, same-size sentence notes, a right-side word
 panel, and a bottom character rail.
 
+## Runtime
+
+- React SPA
+- Vite build
+- GitHub Pages deployment
+- Custom domain: `https://gamelingo.jjgo.io`
+- Production version endpoint: `/version.json`
+
 ## Locked User-Facing Behavior
 
 - The home page is the game selection page.
